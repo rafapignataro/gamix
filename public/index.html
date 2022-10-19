@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live</title>
+  <link rel="stylesheet" href="main.css">
+  <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"
+    integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
+    crossorigin="anonymous"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Silkscreen&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <div class="container">
+    <div class="game-container">
+      <canvas id="canvas" width="800" height="800"></canvas>
+      <div class="form-container" id="form-container">
+        <form class="form" id="enter-form">
+          <h1>Welcome!</h1>
+          <div class="form-field">
+            <label for="username">Username</label>
+            <input type="text" name="username" id="username">
+          </div>
+          <button type="submit">ENTER</button>
+        </form>
+      </div>
+      <div class="chat-container">
+        <div class="chat-messages" id="messages">
+
+        </div>
+        <form id="chat-form" class="chat-input-container">
+          <input type="text" id="chat-input" name="message">
+          <button type="submit">SEND</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <script src="app.js" defer></script>
+</body>
+
+</html>
