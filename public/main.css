@@ -40,14 +40,13 @@ button:hover {
 
 .container {
   display: flex;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .game-container {
   position: relative;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .form-container {

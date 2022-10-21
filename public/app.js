@@ -1,34 +1,16 @@
-const WIDTH = 800;
-const HEIGHT = 800;
+const PROPORTION = 2.5;
+const TILES_X = 30;
+const TILES_Y = 30;
+const TILE_SIZE = 32 * 2 * 2;
+const MAP_WIDTH = TILES_X * TILE_SIZE;
+const MAP_HEIGHT = TILES_Y * TILE_SIZE;
+const CAMERA_SIZES = [
+  { width: 640, height: 360 },
+  { width: 960, height: 540 },
+  { width: 1280, height: 720 },
+];
 
-const createPlayer = ({ id, username }) => {
-  const INITIAL_POSITION = { x: WIDTH / 2, y: HEIGHT / 2 };
-
-  return {
-    id,
-    username,
-    move: {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-    },
-    size: {
-      width: 25,
-      height: 25,
-    },
-    position: {
-      x: INITIAL_POSITION.x - 25,
-      y: INITIAL_POSITION.y - 25,
-    }
-  }
-}
-
-let GAME = null;
 let SCREEN_STATE = 'INITIAL';
-let USER_SOCKET_ID;
-let USERNAME = '';
-let CONNECTED = false;
 
 const formContainer = document.getElementById('form-container');
 const enterForm = document.getElementById('enter-form');
@@ -37,6 +19,58 @@ const messagesContainer = document.getElementById('messages');
 const chatInput = document.getElementById('chat-input');
 const chatForm = document.getElementById('chat-form');
 
+class Camera {
+  context;
+
+  size = {
+    width: 0,
+    height: 0,
+  };
+
+  position = {
+    x: 0,
+    y: 0,
+  };
+
+  constructor({ context, size, position }) {
+    this.context = context;
+
+    this.size = size;
+
+    this.context.canvas.width = 960;
+    this.context.canvas.height = 960;
+
+    this.position = position || { x: 0, y: 0 }
+  }
+
+  follow(player) {
+    if (this.position.x - this.size.width > 0 || this.position.x + this.size.width < MAP_WIDTH) {
+      this.position.x = player.position.x - (this.size.width / 2) - (player.size.width / 2);
+    }
+
+    if (this.position.x - this.size.width < -960) {
+      this.position.x = 0;
+    }
+
+    if (this.position.y - this.size.height > 0 || this.position.y + this.size.height < MAP_HEIGHT) {
+      this.position.y = player.position.y - (this.size.height / 2) - (player.size.height / 2);
+    }
+
+    if (this.position.y - this.size.height < -960) {
+      this.position.y = 0;
+    }
+  }
+
+  getEdges() {
+    return {
+      left: this.x + (this.width * 0.25),
+      right: this.x + (this.width * 0.75),
+      top: this.y + (this.height * 0.25),
+      bottom: this.y + (this.height * 0.75)
+    }
+  }
+}
+
 class GameClient {
   socket;
 
@@ -44,26 +78,35 @@ class GameClient {
 
   context;
 
-  player;
+  player = null;
 
-  players;
+  players = {};
 
-  shots;
+  shots = {};
 
   isPressingKey = false;
 
-  constructor({ socket, canvas, context }) {
+  camera;
+
+  map;
+
+  constructor({ socket, canvas }) {
     this.socket = socket;
 
     this.canvas = canvas;
 
-    this.context = context;
+    this.context = canvas.getContext('2d');
 
-    this.player = null;
 
-    this.players = {};
 
-    this.shots = {};
+    this.camera = new Camera({
+      context: this.context,
+      size: {
+        width: 960,
+        height: 960
+      }
+    });
+
   }
 
   start() {
@@ -81,8 +124,24 @@ class GameClient {
     this.shots = shots;
   }
 
-  addPlayer({ id, username: string }) {
-    this.player = createPlayer({ id, username: string });
+  addPlayer({ id, username, position, size }) {
+    this.player = {
+      id,
+      username,
+      move: {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+      },
+      size: {
+        x: size
+      },
+      position: {
+        x: position.x,
+        y: position.y,
+      }
+    }
   }
 
   movePlayer(key, type) {
@@ -152,58 +211,70 @@ class GameClient {
     })
   }
 
-  update() {
-    Object.keys(this.players).forEach(playerId => {
-      const enemy = this.players[playerId];
-      // console.log(this.player, this.player?.id === playerId)
-      if (this.socket.id === playerId) {
-        this.context.fillStyle = 'red';
-      } else {
-        this.context.fillStyle = 'blue';
-      }
+  positionByCamera() {
 
-      this.context.fillRect(enemy.position.x, enemy.position.y, enemy.size.width, enemy.size.height);
-      this.context.font = '12px Arial';
-      const { width: usernameWidth } = this.context.measureText(enemy.username);
-      this.context.fillText(enemy.username, enemy.position.x - (usernameWidth / 2), enemy.position.y - 10);
-    });
-
-    Object.keys(this.shots).forEach(shotId => {
-      const shot = this.shots[shotId];
-
-      this.context.beginPath();
-      this.context.arc(shot.position.x, shot.position.y, shot.radius, 0, 2 * Math.PI, false);
-      this.context.fillStyle = 'black';
-      this.context.fill();
-    });
-
-    let startY = 25;
-    const startX = 10;
-
-    Object.keys(this.players).forEach(playerId => {
-      const p = this.players[playerId];
-      if (this.socket.id === playerId) {
-        this.context.font = '12px Arial';
-        this.context.fillStyle = 'red';
-        this.context.fillText(p.username, startX, startY);
-      } else {
-        this.context.font = '12px Arial';
-        this.context.fillStyle = 'black';
-        this.context.fillText(p.username, startX, startY);
-      }
-
-      startY += 25;
-    });
   }
 
-  clearGame() {
-    this.context.fillStyle = '#ecf0f1';
-    this.context.fillRect(0, 0, WIDTH, HEIGHT);
+  sizeByProportion() {
+
+  }
+
+  update() {
+    for (let y = 0; y < TILES_Y; y++) {
+      for (let x = 0; x < TILES_X; x++) {
+        if (y === 0 || x === 0 || y === TILES_Y - 1 || x === TILES_X - 1) {
+          this.context.fillStyle = 'darkgreen';
+        } else {
+          this.context.fillStyle = 'lightgreen';
+        }
+        this.context.fillRect(x * TILE_SIZE - this.camera.position.x, y * TILE_SIZE - this.camera.position.y, TILE_SIZE, TILE_SIZE);
+      }
+    }
+
+    if (this.player && this.players[this.player.id]) this.camera.follow(this.players[this.player.id]);
+
+    let startY = 50;
+    // Draw Players
+    for (const player of Object.values(this.players)) {
+      // Player Body
+      this.context.fillStyle = this.socket.id === player.id ? 'red' : 'blue';
+      this.context.fillRect(player.position.x - this.camera.position.x, player.position.y - this.camera.position.y, player.size.width * 2, player.size.height * 2);
+
+      // Player Name
+      this.context.font = '16px Silkscreen';
+      const { width: usernameWidth } = this.context.measureText(player.username);
+      this.context.fillText(player.username, (player.position.x - (usernameWidth / 2)) - this.camera.position.x, (player.position.y - 10) - this.camera.position.y);
+
+      // Player Name in Player List
+      this.context.fillStyle = this.socket.id === player.id ? 'red' : 'black';
+      this.context.font = '24px Silkscreen';
+      this.context.fillText(player.username, 25, startY);
+
+      startY += 50;
+    }
+
+    // Draw Shots
+    for (const shot of Object.values(this.shots)) {
+      this.context.beginPath();
+      this.context.arc(shot.position.x - this.camera.position.x, shot.position.y - this.camera.position.y, shot.radius, 0, 2 * Math.PI, false);
+      this.context.fillStyle = 'black';
+      this.context.fill();
+    }
+
+    if (this.player && this.players[this.player.id]) {
+      const player = this.players[this.player.id];
+      // Draw Player Coordinates
+      this.context.fillStyle = 'white'
+      this.context.font = '24px Silkscreen';
+      this.context.fillText(`X: ${player.position.x}`, this.camera.size.width - 125, 50);
+
+      this.context.fillStyle = 'white';
+      this.context.font = '24px Silkscreen';
+      this.context.fillText(`Y: ${player.position.y}`, this.camera.size.width - 125, 75);
+    }
   }
 
   render() {
-    this.clearGame();
-
     this.update();
 
     window.requestAnimationFrame(this.render.bind(this));
@@ -212,14 +283,12 @@ class GameClient {
 
 isTypingMessage = false;
 
-window.onload = (event) => {
+window.onload = () => {
   const socket = io('http://localhost:4444');
 
   const canvas = document.getElementById('canvas');
 
-  const context = canvas.getContext('2d');
-
-  const game = new GameClient({ socket, canvas, context });
+  const game = new GameClient({ socket, canvas });
 
   socket.on('connect', (connection) => {
     game.start();

@@ -43,15 +43,11 @@ type Player = {
   }
 }
 
-const NATIVE_WIDTH = 800;
-const NATIVE_HEIGHT = 800;
-
-const generatePosition = () => {
-  return {
-    x: Math.floor(Math.random() * NATIVE_WIDTH),
-    y: Math.floor(Math.random() * NATIVE_HEIGHT)
-  }
-}
+const TILES_X = 30;
+const TILES_Y = 30;
+const TILE_SIZE = 32;
+const MAP_WIDTH = TILES_X * TILE_SIZE;
+const MAP_HEIGHT = TILES_Y * TILE_SIZE;
 
 const createPlayer = ({ id, username }: { id: string, username: string }) => {
   return {
@@ -65,10 +61,15 @@ const createPlayer = ({ id, username }: { id: string, username: string }) => {
     },
     velocity: 10,
     size: {
-      width: 25,
-      height: 25,
+      width: 20,
+      height: 20,
     },
-    position: generatePosition()
+    position: {
+      // x: Math.floor(Math.random() * MAP_WIDTH),
+      // y: Math.floor(Math.random() * MAP_HEIGHT),
+      x: 100,
+      y: 100
+    }
   }
 }
 
@@ -152,16 +153,12 @@ class Game {
     return Object.values(this.players);
   }
 
-
   addPlayer({ id, username }: AddPlayerProps) {
     this.players[id] = createPlayer({ id, username });
-
-    this.ioServer.sockets.emit('GAME_STATE', this.getGameState());
   }
 
   movePlayer(player: Player) {
     if (!this.players[player.id]) return;
-
     this.players[player.id].move = player.move;
   }
 
@@ -212,7 +209,6 @@ class Game {
     };
 
     this.shots[shot.id] = shot;
-    this.ioServer.sockets.emit('GAME_STATE', this.getGameState());
   }
 
   private getShots() {
@@ -228,7 +224,7 @@ class Game {
 
   private update() {
     this.getPlayers().forEach(player => {
-      if (player.move.up && player.position.y - player.velocity >= 0) {
+      if (player.move.up && player.position.y > 0) {
         this.players[player.id].position.y = player.position.y -= player.velocity;
       }
       if (player.move.down && player.position.y + player.size.height + player.velocity <= this.map.height) {
@@ -237,7 +233,7 @@ class Game {
       if (player.move.right && player.position.x + player.size.width + player.velocity <= this.map.width) {
         this.players[player.id].position.x = player.position.x += player.velocity;
       }
-      if (player.move.left && player.position.x - player.velocity >= 0) {
+      if (player.move.left && player.position.x > 0) {
         this.players[player.id].position.x = player.position.x -= player.velocity;
       }
     });
@@ -289,8 +285,8 @@ class Messages {
 const game = new Game({
   ioServer: io,
   map: {
-    width: NATIVE_WIDTH,
-    height: NATIVE_HEIGHT
+    width: MAP_WIDTH,
+    height: MAP_HEIGHT
   }
 });
 
@@ -302,7 +298,7 @@ io.on('connection', (socket) => {
 
     game.addPlayer(joinedUser);
 
-    io.emit('JOINED_GAME', game.players[socket.id]);
+    io.to(socket.id).emit('JOINED_GAME', game.players[joinedUser.id]);
   });
 
   socket.on('PLAYER_MOVE', (player) => {
