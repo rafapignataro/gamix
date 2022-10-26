@@ -18,27 +18,24 @@
 
 <body>
   <div class="container">
-    <div class="game-container">
-      <canvas id="canvas"></canvas>
-      <div class="form-container" id="form-container">
-        <form class="form" id="enter-form">
-          <h1>Welcome!</h1>
-          <div class="form-field">
-            <label for="username">Username</label>
-            <input type="text" name="username" id="username">
-          </div>
-          <button type="submit">ENTER</button>
-        </form>
-      </div>
-      <div class="chat-container">
-        <div class="chat-messages" id="messages">
-
+    <canvas id="canvas"></canvas>
+    <div class="form-container" id="form-container">
+      <h1>MUNDIX</h1>
+      <form class="form" id="enter-form">
+        <div class="form-field">
+          <input type="text" placeholder="Your name" name="username" id="username">
         </div>
-        <form id="chat-form" class="chat-input-container">
-          <input type="text" id="chat-input" name="message">
-          <button type="submit">SEND</button>
-        </form>
+        <button type="submit">ENTER</button>
+      </form>
+    </div>
+    <div class="chat-container">
+      <div class="chat-messages" id="messages">
+
       </div>
+      <form id="chat-form" class="chat-input-container">
+        <input type="text" id="chat-input" name="message">
+        <button type="submit">SEND</button>
+      </form>
     </div>
   </div>
   <script src="app.js" defer></script>

@@ -4,6 +4,8 @@ import cors from 'cors';
 import { Server, Socket } from 'socket.io';
 import crypto from 'crypto';
 
+import { Player, Shot, GameConfig, AddPlayerProps, Position, Message, MessagesConfig, Map } from './types';
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -13,38 +15,10 @@ const io = new Server(server, {
   }
 });
 
-type Position = {
-  x: number;
-  y: number;
-}
+import { MAP } from './map';
 
-type Size = {
-  width: number;
-  height: number;
-}
-
-type Player = {
-  id: string;
-  username: string;
-  move: {
-    up: boolean,
-    down: boolean,
-    left: boolean,
-    right: boolean,
-  },
-  velocity: number;
-  size: {
-    width: number,
-    height: number,
-  },
-  position: {
-    x: number,
-    y: number,
-  }
-}
-
-const TILES_X = 30;
-const TILES_Y = 30;
+const TILES_X = MAP.length;
+const TILES_Y = MAP[0].length;
 const TILE_SIZE = 32;
 const MAP_WIDTH = TILES_X * TILE_SIZE;
 const MAP_HEIGHT = TILES_Y * TILE_SIZE;
@@ -61,8 +35,8 @@ const createPlayer = ({ id, username }: { id: string, username: string }) => {
     },
     velocity: 10,
     size: {
-      width: 20,
-      height: 20,
+      width: 10,
+      height: 16,
     },
     position: {
       // x: Math.floor(Math.random() * MAP_WIDTH),
@@ -71,39 +45,6 @@ const createPlayer = ({ id, username }: { id: string, username: string }) => {
       y: 100
     }
   }
-}
-
-type CreateShotProps = {
-  playerId: string;
-  angle: number;
-}
-
-type Shot = {
-  id: string;
-  playerId: string;
-  position: Position;
-  radius: number;
-  velocity: Position;
-  createdAt: string;
-}
-
-type GameConfig = {
-  map: {
-    width: number;
-    height: number;
-  }
-  ioServer: Server;
-  fps?: number;
-}
-
-type Map = {
-  width: number;
-  height: number;
-}
-
-type AddPlayerProps = {
-  id: string;
-  username: string;
 }
 
 class Game {
@@ -146,8 +87,6 @@ class Game {
     this.players = {};
     this.shots = {};
   }
-
-  // Players
 
   private getPlayers() {
     return Object.values(this.players);
@@ -196,14 +135,14 @@ class Game {
     const shot = {
       id: crypto.randomUUID(),
       playerId,
-      radius: 1.5,
+      radius: 0.3,
       position: {
-        x: player.position.x + (player.size.width / 2 - 5 / 2),
-        y: player.position.y + (player.size.height / 2 - 5 / 2),
+        x: player.position.x,
+        y: player.position.y,
       },
       velocity: {
-        x: dx * 40,
-        y: dy * 40
+        x: dx * 75,
+        y: dy * 75
       },
       createdAt: new Date().toISOString()
     };
@@ -245,19 +184,6 @@ class Game {
       this.shots[shot.id].position.y = shot.position.y += velocity.y;
     })
   }
-}
-
-type Message = {
-  player: {
-    id: string;
-    username: string;
-  }
-  text: string;
-  timestamp: string;
-}
-
-type MessagesConfig = {
-  ioServer: Server;
 }
 
 class Messages {
