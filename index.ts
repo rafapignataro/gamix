@@ -27,7 +27,7 @@ const createPlayer = ({ id, username, screen }: { id: string, username: string, 
       left: false,
       right: false,
     },
-    velocity: 1,
+    velocity: 2,
     size: {
       width: 10,
       height: 16,
@@ -174,8 +174,8 @@ class Game {
         y: player.position.y,
       },
       velocity: {
-        x: dx * 75,
-        y: dy * 75
+        x: dx * 14,
+        y: dy * 14
       },
       createdAt: new Date().toISOString()
     };
