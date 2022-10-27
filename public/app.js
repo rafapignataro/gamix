@@ -7,6 +7,14 @@ const messagesContainer = document.getElementById('messages');
 const chatInput = document.getElementById('chat-input');
 const chatForm = document.getElementById('chat-form');
 
+const getTileColor = (tile) => {
+  if (tile === 0) return '#6ab04c';
+  if (tile === 1) return '#f6e58d';
+  if (tile === 2) return '#4834d4';
+
+  return 'black';
+}
+
 const circle = ({ context, x, y, radius, color }) => {
   context.beginPath();
   context.arc(
@@ -34,6 +42,34 @@ const text = ({ context, x, y, text, color, font }) => {
     x,
     y
   );
+}
+
+class Map {
+  tiles = [[]];
+
+  tileSize = 0;
+
+  size = 0;
+
+  tilesX = 0;
+
+  tilesY = 0;
+
+
+  constructor({ tiles, tileSize }, proportion) {
+    this.tiles = tiles;
+
+    this.tileSize = tileSize * proportion;
+
+    this.tilesX = tiles[0].length;
+
+    this.tilesY = tiles.length;
+
+    this.size = {
+      width: this.tilesX * this.tileSize,
+      height: this.tilesY * this.tileSize,
+    };
+  }
 }
 
 class Camera {
@@ -71,20 +107,24 @@ class Camera {
   }
 
   follow(player) {
-    if (this.position.x - this.size.width > 0 || this.position.x + this.size.width < this.mapBoundaries.x) {
-      this.position.x = player.position.x - (this.size.width / 2) + (player.size.width * (this.proportion / 2));
-    }
+    this.position.x = (player.position.x * this.proportion) - (this.size.width / 2) + (player.size.width * (this.proportion / 2));
+    this.position.y = (player.position.y * this.proportion) - (this.size.height / 2) + (player.size.height * (this.proportion / 2));
 
     if (this.position.x - this.size.width < -this.size.width) {
       this.position.x = 0;
     }
 
-    if (this.position.y - this.size.height > 0 || this.position.y + this.size.height < this.mapBoundaries.y) {
-      this.position.y = player.position.y - (this.size.height / 2) + (player.size.height * (this.proportion / 2));
+    if (this.position.x + this.size.width > this.mapBoundaries.width + 1) {
+      this.position.x = this.mapBoundaries.width - this.size.width;
     }
+
 
     if (this.position.y - this.size.height < -this.size.height) {
       this.position.y = 0;
+    }
+
+    if (this.position.y + this.size.height > this.mapBoundaries.height) {
+      this.position.y = this.mapBoundaries.height - this.size.height;
     }
   }
 
@@ -120,12 +160,15 @@ class GameClient {
     tilesX: 0,
     tilesY: 0,
     width: 0,
-    height: 0
+    height: 0,
+    tiles: [[]]
   };
 
-  proportion = 1;
+  proportion = 2;
 
-  constructor({ socket, canvas, map }) {
+  status = '';
+
+  constructor({ socket, canvas }) {
     this.socket = socket;
 
     this.canvas = canvas;
@@ -137,35 +180,27 @@ class GameClient {
 
       if (p < 0.75) return 6;
 
-      if (p >= 0.75 && p < 1) return 6
+      if (p >= 0.75 && p < 1) return 8;
 
-      if (p >= 1 && p < 1.5) return 12;
-
-      return 16;
+      return 12;
     })();
 
-    this.map = {
-      ...map,
-      tileSize: map.tileSize * this.proportion,
-      width: map.tileSize * map.tilesX * this.proportion,
-      height: map.tileSize * map.tilesY * this.proportion,
-    };
+    this.status = 'CONNECTING';
+  }
 
+  start(map) {
+    this.status = 'CONNECTED';
+    this.map = new Map(map, this.proportion);
     this.camera = new Camera({
       context: this.context,
       size: {
         width: window.innerWidth,
         height: window.innerHeight
       },
-      mapBoundaries: {
-        x: this.map.width,
-        y: this.map.height
-      },
+      mapBoundaries: this.map.size,
       proportion: this.proportion
     });
-  }
 
-  start() {
     window.requestAnimationFrame(this.render.bind(this));
   }
 
@@ -272,7 +307,7 @@ class GameClient {
 
     for (let y = 0; y < map.tilesY; y++) {
       for (let x = 0; x < map.tilesX; x++) {
-        const color = y === 0 || x === 0 || y === map.tilesY - 1 || x === map.tilesX - 1 ? 'darkgreen' : 'lightgreen';
+        const tile = map.tiles[y][x];
 
         rect({
           context,
@@ -280,19 +315,19 @@ class GameClient {
           y: y * map.tileSize - camera.position.y,
           width: map.tileSize,
           height: map.tileSize,
-          color
+          color: getTileColor(tile)
         });
 
-        context.beginPath();
-        context.lineWidth = '1';
-        context.strokeStyle = '#27ae60';
-        context.rect(
-          (x * map.tileSize) - camera.position.x,
-          (y * map.tileSize) - camera.position.y,
-          map.tileSize,
-          map.tileSize,
-        );
-        context.stroke();
+        // context.beginPath();
+        // context.lineWidth = '1';
+        // context.strokeStyle = '#fff';
+        // context.rect(
+        //   (x * map.tileSize) - camera.position.x,
+        //   (y * map.tileSize) - camera.position.y,
+        //   map.tileSize,
+        //   map.tileSize,
+        // );
+        // context.stroke();
       }
     }
 
@@ -301,25 +336,24 @@ class GameClient {
     let startY = 50;
     // Draw Players
     for (const player of Object.values(players)) {
+      if (socket.id === player.id) this.player = player;
       // Player Body
       rect({
         context,
-        x: player.position.x - camera.position.x,
-        y: player.position.y - camera.position.y,
+        x: (player.position.x * this.proportion) - camera.position.x,
+        y: (player.position.y * this.proportion) - camera.position.y,
         width: player.size.width * proportion,
         height: player.size.height * proportion,
-        color: socket.id === player.id ? 'red' : 'blue'
+        color: socket.id === player.id ? '#eb4d4b' : '#130f40'
       });
-
-      const { width: usernameWidth } = context.measureText(player.username);
 
       text({
         context,
         text: player.username,
-        x: (player.position.x - (usernameWidth / 2)) - camera.position.x,
-        y: (player.position.y - 10) - camera.position.y,
+        x: (player.position.x * this.proportion) - camera.position.x,
+        y: (player.position.y * this.proportion) - 10 - camera.position.y,
         font: 16,
-        color: socket.id === player.id ? 'red' : 'blue'
+        color: socket.id === player.id ? '#eb4d4b' : '#130f40'
       });
 
       text({
@@ -328,7 +362,7 @@ class GameClient {
         x: 25,
         y: startY,
         font: 24,
-        color: socket.id === player.id ? 'red' : 'blue'
+        color: socket.id === player.id ? '#eb4d4b' : '#130f40'
       });
 
       startY += 50;
@@ -338,8 +372,8 @@ class GameClient {
     for (const shot of Object.values(shots)) {
       circle({
         context,
-        x: shot.position.x - camera.position.x,
-        y: shot.position.y - camera.position.y,
+        x: (shot.position.x * this.proportion) - camera.position.x,
+        y: (shot.position.y * this.proportion) - camera.position.y,
         radius: shot.radius * proportion,
         color: 'black'
       })
@@ -350,7 +384,7 @@ class GameClient {
 
       text({
         context,
-        text: `X: ${player.position.x * proportion}`,
+        text: `X: ${player.position.x}`,
         x: camera.size.width - 125,
         y: 50,
         font: 24,
@@ -359,7 +393,7 @@ class GameClient {
 
       text({
         context,
-        text: `Y: ${player.position.y * proportion}`,
+        text: `Y: ${player.position.y}`,
         x: camera.size.width - 125,
         y: 75,
         font: 24,
@@ -382,6 +416,8 @@ class GameClient {
   }
 
   render() {
+    if (this.status !== 'CONNECTED') return;
+
     this.update();
 
     window.requestAnimationFrame(this.render.bind(this));
@@ -398,24 +434,22 @@ window.onload = () => {
   const game = new GameClient({
     socket,
     canvas,
-    map: {
-      tileSize: 32,
-      tilesX: 30,
-      tilesY: 30,
-    }
   });
 
   socket.on('connect', (connection) => {
-    game.start();
-
     enterForm.onsubmit = (event) => {
       event.preventDefault();
 
       if (usernameInput.value === '') return;
 
+      if (!game.status === 'CONNECTED') return;
+
       socket.emit('JOIN_GAME', {
         id: socket.id,
-        username: usernameInput.value
+        username: usernameInput.value,
+        screen: {
+          size: game.map.size,
+        }
       });
 
       formContainer.style.display = 'none'
@@ -451,6 +485,10 @@ window.onload = () => {
 
       game.playerShot(event.clientX, event.clientY)
     }
+
+    socket.on('GAME_MAP', map => {
+      game.start(map);
+    })
 
     socket.on('GAME_STATE', (state) => {
       game.updateState(JSON.parse(state))

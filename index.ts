@@ -4,7 +4,7 @@ import cors from 'cors';
 import { Server, Socket } from 'socket.io';
 import crypto from 'crypto';
 
-import { Player, Shot, GameConfig, AddPlayerProps, Position, Message, MessagesConfig, Map } from './types';
+import { Player, Shot, GameConfig, AddPlayerProps, Position, Message, MessagesConfig, PlayerScreen, Size } from './types';
 
 const app = express();
 const server = http.createServer(app);
@@ -15,15 +15,9 @@ const io = new Server(server, {
   }
 });
 
-import { MAP } from './map';
+import { MAP, TILE_SIZE } from './map';
 
-const TILES_X = MAP.length;
-const TILES_Y = MAP[0].length;
-const TILE_SIZE = 32;
-const MAP_WIDTH = TILES_X * TILE_SIZE;
-const MAP_HEIGHT = TILES_Y * TILE_SIZE;
-
-const createPlayer = ({ id, username }: { id: string, username: string }) => {
+const createPlayer = ({ id, username, screen }: { id: string, username: string, screen: PlayerScreen }) => {
   return {
     id,
     username,
@@ -33,7 +27,7 @@ const createPlayer = ({ id, username }: { id: string, username: string }) => {
       left: false,
       right: false,
     },
-    velocity: 10,
+    velocity: 1,
     size: {
       width: 10,
       height: 16,
@@ -43,7 +37,41 @@ const createPlayer = ({ id, username }: { id: string, username: string }) => {
       // y: Math.floor(Math.random() * MAP_HEIGHT),
       x: 100,
       y: 100
-    }
+    },
+    screen
+  }
+}
+
+type MapProps = {
+  tiles: number[][];
+  tileSize: number
+}
+
+class Map {
+  tiles: number[][];
+
+  tileSize: number;
+
+  size: Size;
+
+  tilesX: number;
+
+  tilesY: number;
+
+
+  constructor({ tiles, tileSize }: MapProps) {
+    this.tiles = tiles;
+
+    this.tileSize = tileSize;
+
+    this.tilesX = tiles[0].length;
+
+    this.tilesY = tiles.length;
+
+    this.size = {
+      width: this.tilesX * tileSize,
+      height: this.tilesY * tileSize,
+    };
   }
 }
 
@@ -64,7 +92,7 @@ class Game {
 
   constructor(config: GameConfig) {
     this.ioServer = config.ioServer;
-    this.map = config.map;
+    this.map = new Map(config.map);
     this.fps = config.fps || 1000 / 60;
     this.players = {};
     this.shots = {};
@@ -92,8 +120,13 @@ class Game {
     return Object.values(this.players);
   }
 
-  addPlayer({ id, username }: AddPlayerProps) {
-    this.players[id] = createPlayer({ id, username });
+  addPlayer({ id, username, screen }: AddPlayerProps) {
+    this.players[id] = createPlayer({
+      id,
+      username,
+      screen
+    });
+    console.log(this.players[id])
   }
 
   movePlayer(player: Player) {
@@ -166,10 +199,10 @@ class Game {
       if (player.move.up && player.position.y > 0) {
         this.players[player.id].position.y = player.position.y -= player.velocity;
       }
-      if (player.move.down && player.position.y + player.size.height + player.velocity <= this.map.height) {
+      if (player.move.down && player.position.y + player.size.height + player.velocity <= this.map.size.height) {
         this.players[player.id].position.y = player.position.y += player.velocity;
       }
-      if (player.move.right && player.position.x + player.size.width + player.velocity <= this.map.width) {
+      if (player.move.right && player.position.x + player.size.width + player.velocity <= this.map.size.width) {
         this.players[player.id].position.x = player.position.x += player.velocity;
       }
       if (player.move.left && player.position.x > 0) {
@@ -211,17 +244,19 @@ class Messages {
 const game = new Game({
   ioServer: io,
   map: {
-    width: MAP_WIDTH,
-    height: MAP_HEIGHT
+    tiles: MAP,
+    tileSize: TILE_SIZE
   }
 });
 
 const messages = new Messages({ ioServer: io });
 
 io.on('connection', (socket) => {
-  socket.on('JOIN_GAME', (joinedUser) => {
-    if (!game.getPlayersCount()) game.start();
+  if (!game.getPlayersCount()) game.start();
 
+  socket.emit('GAME_MAP', { tiles: game.map.tiles, tileSize: game.map.tileSize });
+
+  socket.on('JOIN_GAME', (joinedUser) => {
     game.addPlayer(joinedUser);
 
     io.to(socket.id).emit('JOINED_GAME', game.players[joinedUser.id]);

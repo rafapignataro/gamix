@@ -20,14 +20,9 @@ export type Player = {
     right: boolean,
   },
   velocity: number;
-  size: {
-    width: number,
-    height: number,
-  },
-  position: {
-    x: number,
-    y: number,
-  }
+  size: Size;
+  position: Position;
+  screen: PlayerScreen;
 }
 
 export type CreateShotProps = {
@@ -46,21 +41,30 @@ export type Shot = {
 
 export type GameConfig = {
   map: {
-    width: number;
-    height: number;
-  }
+    tiles: number[][];
+    tileSize: number;
+  };
   ioServer: Server;
   fps?: number;
 }
 
 export type Map = {
+  tiles: number[][];
   width: number;
   height: number;
+  tilesX: number;
+  tilesY: number;
+  tileSize: number;
+}
+
+export type PlayerScreen = {
+  size: Size;
 }
 
 export type AddPlayerProps = {
   id: string;
   username: string;
+  screen: PlayerScreen;
 }
 
 export type Message = {
