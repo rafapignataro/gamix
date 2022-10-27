@@ -286,18 +286,24 @@ class GameClient {
   }
 
   playerShot(clickX, clickY) {
-    const { canvas, socket } = this;
-
-    const rect = canvas.getBoundingClientRect()
-
-    const mouseX = clickX - rect.x;
-    const mouseY = clickY - rect.y;
-
+    const { socket } = this;
     socket.emit('USER_FIRE', {
       playerId: socket.id,
       mousePosition: {
-        x: mouseX,
-        y: mouseY
+        x: clickX,
+        y: clickY
+      }
+    })
+  }
+
+  playerAim(clickX, clickY) {
+    const { socket } = this;
+
+    socket.emit('USER_AIM', {
+      playerId: socket.id,
+      mousePosition: {
+        x: clickX,
+        y: clickY
       }
     })
   }
@@ -340,18 +346,34 @@ class GameClient {
       // Player Body
       rect({
         context,
-        x: (player.position.x * this.proportion) - camera.position.x,
-        y: (player.position.y * this.proportion) - camera.position.y,
+        x: (player.position.x * proportion) - camera.position.x,
+        y: (player.position.y * proportion) - camera.position.y,
         width: player.size.width * proportion,
         height: player.size.height * proportion,
         color: socket.id === player.id ? '#eb4d4b' : '#130f40'
       });
 
+      context.save();
+      context.translate(
+        ((player.position.x + (player.size.width / 2)) * proportion) - camera.position.x,
+        ((player.position.y + (player.size.height / 2)) * proportion) - camera.position.y
+      );
+      context.rotate(player.weapon.rotation * Math.PI / 180);
+      rect({
+        context,
+        x: 0,
+        y: 0,
+        width: 10 * proportion,
+        height: 1 * proportion,
+        color: 'black'
+      });
+      context.restore();
+
       text({
         context,
         text: player.username,
-        x: (player.position.x * this.proportion) - camera.position.x,
-        y: (player.position.y * this.proportion) - 10 - camera.position.y,
+        x: (player.position.x * proportion) - camera.position.x,
+        y: (player.position.y * proportion) - 10 - camera.position.y,
         font: 16,
         color: socket.id === player.id ? '#eb4d4b' : '#130f40'
       });
@@ -442,13 +464,11 @@ window.onload = () => {
 
       if (usernameInput.value === '') return;
 
-      if (!game.status === 'CONNECTED') return;
-
       socket.emit('JOIN_GAME', {
         id: socket.id,
         username: usernameInput.value,
         screen: {
-          size: game.map.size,
+          size: game.camera.size,
         }
       });
 
@@ -484,6 +504,12 @@ window.onload = () => {
       if (isTypingMessage) return;
 
       game.playerShot(event.clientX, event.clientY)
+    }
+
+    window.onmousemove = (event) => {
+      if (isTypingMessage) return;
+
+      game.playerAim(event.clientX, event.clientY)
     }
 
     socket.on('GAME_MAP', map => {

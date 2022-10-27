@@ -38,7 +38,20 @@ const createPlayer = ({ id, username, screen }: { id: string, username: string, 
       x: 100,
       y: 100
     },
-    screen
+    screen,
+    weapon: {
+      rotation: 0,
+      dx: 0,
+      dy: 0,
+      position: {
+        x: 100 + 10 / 2,
+        y: 100 + 16 / 2,
+      },
+      size: {
+        width: 1,
+        height: 5
+      }
+    }
   }
 }
 
@@ -144,6 +157,40 @@ class Game {
     return Object.keys(this.players).length;
   }
 
+  playerAim({ playerId, mousePosition }: { playerId: string, mousePosition: Position }) {
+    if (!this.players[playerId]) return;
+
+    const player = this.players[playerId];
+
+    const startPosition = {
+      x: player.screen.size.width / 2,
+      y: player.screen.size.height / 2,
+    };
+
+    const endPosition = {
+      x: mousePosition.x,
+      y: mousePosition.y
+    };
+
+    const xDistance = endPosition.x - startPosition.x;
+    const yDistance = endPosition.y - startPosition.y;
+    const directDistance = Math.sqrt((xDistance * xDistance) + (yDistance * yDistance));
+
+    let rotation = Math.atan2(yDistance, xDistance) * 180 / Math.PI;
+
+    if (rotation < 0) rotation = 180 + (180 - Math.abs(rotation))
+
+    const dx = xDistance / directDistance;
+    const dy = yDistance / directDistance;
+
+    this.players[player.id].weapon = {
+      ...player.weapon,
+      rotation,
+      dx,
+      dy,
+    }
+  }
+
   // Shots
   addShot({ playerId, mousePosition }: { playerId: string, mousePosition: Position }) {
     if (!this.players[playerId]) return;
@@ -159,23 +206,17 @@ class Game {
       if (now - lastShotTime < 250) return;
     }
 
-    var vy = mousePosition.y - player.position.y;
-    var vx = mousePosition.x - player.position.x;
-    const dist = Math.sqrt(vx * vx + vy * vy);
-    const dx = vx / dist;
-    const dy = vy / dist;
-
     const shot = {
       id: crypto.randomUUID(),
       playerId,
       radius: 0.3,
       position: {
-        x: player.position.x,
-        y: player.position.y,
+        x: player.weapon.position.x,
+        y: player.weapon.position.y,
       },
       velocity: {
-        x: dx * 14,
-        y: dy * 14
+        x: player.weapon.dx * 10,
+        y: player.weapon.dy * 10
       },
       createdAt: new Date().toISOString()
     };
@@ -207,6 +248,11 @@ class Game {
       }
       if (player.move.left && player.position.x > 0) {
         this.players[player.id].position.x = player.position.x -= player.velocity;
+      }
+
+      this.players[player.id].weapon.position = {
+        x: this.players[player.id].position.x + this.players[player.id].size.width / 2,
+        y: this.players[player.id].position.y + this.players[player.id].size.height / 2,
       }
     });
 
@@ -268,6 +314,13 @@ io.on('connection', (socket) => {
 
   socket.on('USER_FIRE', ({ playerId, mousePosition }) => {
     game.addShot({
+      playerId,
+      mousePosition
+    })
+  });
+
+  socket.on('USER_AIM', ({ playerId, mousePosition }) => {
+    game.playerAim({
       playerId,
       mousePosition
     })

@@ -23,6 +23,13 @@ export type Player = {
   size: Size;
   position: Position;
   screen: PlayerScreen;
+  weapon: {
+    rotation: number;
+    dx: number;
+    dy: number;
+    position: Position;
+    size: Size;
+  }
 }
 
 export type CreateShotProps = {
