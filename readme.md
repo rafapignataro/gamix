@@ -10,12 +10,12 @@ I'm creating a game/game-engine with canvas, javascript/typescript, node.js and 
 - [x] Camera
 - [x] Player Shot
 - [x] Player Aim - Need Fix
-- [] Collisions
+- [ ] Collisions
 
 ### Game UI
 
 - [x] Player Coords
 - [x] Chat
 - [x] Player List
-- [] Minimap
+- [ ] Minimap
 -
