@@ -8,7 +8,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Live</title>
-  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="styles/index.css">
   <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"
     integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
     crossorigin="anonymous"></script>
@@ -19,27 +19,26 @@
 <body>
   <div class="container">
     <canvas id="canvas"></canvas>
-    <div class="form-container" id="form-container">
+    <div class="screen" id="join-screen">
       <h1>MUNDIX</h1>
-      <form class="form" id="enter-form">
+      <form class="join-form" id="join-form">
         <div class="form-field">
           <input type="text" placeholder="Your name" name="username" id="username" maxlength="10">
         </div>
         <button type="submit">ENTER</button>
       </form>
     </div>
-    <div class="chat-container">
-      <div class="chat-messages" id="messages">
-
+    <div class="screen" id="game-screen">
+      <div class="players-container" id="players-container">
+        <h2>Players</h2>
+        <div class="player-list" id="player-list"></div>
       </div>
-      <form id="chat-form" class="chat-input-container">
-        <input type="text" id="chat-input" name="message">
-        <button type="submit">SEND</button>
-      </form>
-    </div>
-    <div class="players-container">
-      <h2>Players</h2>
-      <div class="players" id="player-list">
+      <div class="chat-container" id="chat-container">
+        <div class="chat-list" id="chat-list"></div>
+        <form id="send-message-form" class="send-message-form">
+          <input type="text" id="message" name="message">
+          <button type="submit">SEND</button>
+        </form>
       </div>
     </div>
   </div>

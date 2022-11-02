@@ -1,12 +1,20 @@
 let SCREEN_STATE = 'INITIAL';
 
-const formContainer = document.getElementById('form-container');
-const enterForm = document.getElementById('enter-form');
-const usernameInput = document.getElementById('username');
-const messagesContainer = document.getElementById('messages');
-const chatInput = document.getElementById('chat-input');
-const chatForm = document.getElementById('chat-form');
+// Screens
+const joinScreen = document.getElementById('join-screen');
+const gameScreen = document.getElementById('game-screen');
+
+// List States
 const playerList = document.getElementById('player-list');
+const chatList = document.getElementById('chat-list');
+
+// Forms
+const joinForm = document.getElementById('join-form');
+const sendMessageForm = document.getElementById('send-message-form');
+
+// Inputs
+const usernameInput = document.getElementById('username');
+const messageInput = document.getElementById('message');
 
 class PlayerListController {
   elementId;
@@ -450,18 +458,6 @@ class GameClient {
         color: 'white'
       });
     }
-
-    // // Draw Y Axis
-    // context.beginPath();
-    // context.moveTo(camera.size.width / 2, 0);
-    // context.lineTo(camera.size.width / 2, camera.size.height);
-    // context.stroke();
-
-    // // Draw X Axis
-    // context.beginPath();
-    // context.moveTo(0, camera.size.height / 2);
-    // context.lineTo(camera.size.width, camera.size.height / 2);
-    // context.stroke();
   }
 
   render() {
@@ -485,10 +481,13 @@ window.onload = () => {
     canvas,
   });
 
+  joinScreen.style.display = 'flex';
+  gameScreen.style.display = 'none';
+
   socket.on('connect', (connection) => {
     const playerListController = new PlayerListController('player-list');
 
-    enterForm.onsubmit = (event) => {
+    joinForm.onsubmit = (event) => {
       event.preventDefault();
 
       if (usernameInput.value === '') return;
@@ -501,11 +500,9 @@ window.onload = () => {
           proportion: game.camera.proportion
         }
       });
-
-      formContainer.style.display = 'none'
     }
 
-    chatForm.onsubmit = (event) => {
+    sendMessageForm.onsubmit = (event) => {
       event.preventDefault();
 
       socket.emit('SEND_MESSAGE', {
@@ -513,9 +510,9 @@ window.onload = () => {
           id: game.player.id,
           username: game.player.username,
         },
-        text: chatInput.value
+        text: messageInput.value
       });
-      chatInput.value = '';
+      messageInput.value = '';
     }
 
     window.onkeydown = (event) => {
@@ -532,11 +529,6 @@ window.onload = () => {
 
     window.onmousedown = (event) => {
       if (isTypingMessage) return;
-
-      console.log({
-        x: Math.round((game.camera.position.x + event.clientX) / game.camera.proportion),
-        y: Math.round((game.camera.position.y + event.clientY) / game.camera.proportion),
-      });
 
       game.playerShot(event.clientX, event.clientY)
     }
@@ -560,6 +552,9 @@ window.onload = () => {
       if (Object.keys(game.players).length) {
         playerListController.addInitialPlayers(game.players);
       }
+
+      joinScreen.style.display = 'none';
+      gameScreen.style.display = 'block';
     });
 
     socket.on('NEW_MESSAGE', (message) => {
@@ -601,9 +596,9 @@ window.onload = () => {
 
       chatMessage.appendChild(messageContent);
 
-      messagesContainer.appendChild(chatMessage);
+      chatList.appendChild(chatMessage);
 
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      chatList.scrollTop = chatList.scrollHeight;
     });
 
     socket.on('PLAYER_JOINED', player => {
@@ -617,10 +612,10 @@ window.onload = () => {
     socket.on('disconnect', () => {
       game.reset();
       SCREEN_STATE = 'INITIAL';
-      formContainer.style.display = 'flex';
+      joinFormContainer.style.display = 'flex';
     })
   })
 }
 
-chatInput.onfocus = () => isTypingMessage = true;
-chatInput.onblur = () => isTypingMessage = false;
+messageInput.onfocus = () => isTypingMessage = true;
+messageInput.onblur = () => isTypingMessage = false;

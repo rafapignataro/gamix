@@ -1,0 +1,36 @@
+.join-form {
+  display: grid;
+  grid-template-rows: 1fr;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 4px;
+  width: 300px;
+}
+
+.form-field input {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 24px;
+  width: 100%;
+  border: 0;
+  font-size: 24px;
+  height: 60px;
+  font-family: 'Silkscreen', cursive;
+}
+
+.form-field input:focus {
+  outline: 0;
+}
+
+.form-field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 18px;
+}
+
+.join-form button {
+  font-size: 24px;
+  font-size: 24px;
+  padding: 1rem 1rem;
+}

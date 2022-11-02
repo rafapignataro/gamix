@@ -1,0 +1,15 @@
+#join-screen {
+  background: rgba(0, 0, 0, .3);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+#join-screen h1 {
+  font-size: 96px;
+  text-align: center;
+  font-family: 'Silkscreen', cursive;
+  color: #fff;
+  margin-bottom: 16px;
+}

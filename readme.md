@@ -9,7 +9,7 @@ I'm creating a game/game-engine with canvas, javascript/typescript, node.js and 
 - [x] Player Movement
 - [x] Camera
 - [x] Player Shot
-- [x] Player Aim - Need Fix
+- [x] Player Aim
 - [ ] Collisions
 
 ### UI
@@ -18,4 +18,3 @@ I'm creating a game/game-engine with canvas, javascript/typescript, node.js and 
 - [x] Chat
 - [x] Player List
 - [ ] Minimap
--
