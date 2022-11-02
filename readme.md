@@ -4,7 +4,7 @@ I'm creating a game/game-engine with canvas, javascript/typescript, node.js and 
 
 ## TO-DO LIST
 
-### Game Mechanics
+### Mechanics
 
 - [x] Player Movement
 - [x] Camera
@@ -12,7 +12,7 @@ I'm creating a game/game-engine with canvas, javascript/typescript, node.js and 
 - [x] Player Aim - Need Fix
 - [ ] Collisions
 
-### Game UI
+### UI
 
 - [x] Player Coords
 - [x] Chat
