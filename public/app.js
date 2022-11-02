@@ -94,7 +94,10 @@ class Map {
 
   tileSize = 0;
 
-  size = 0;
+  size = {
+    x: 0,
+    y: 0
+  };
 
   tilesX = 0;
 
@@ -349,7 +352,8 @@ class GameClient {
       mousePosition: {
         x: clickX,
         y: clickY
-      }
+      },
+      cameraPosition: this.camera.position
     })
   }
 
@@ -439,22 +443,12 @@ class GameClient {
 
       text({
         context,
-        text: `X: ${player.position.x}`,
-        x: camera.size.width - 125,
+        text: `X: ${player.position.x} | Y: ${player.position.y}`,
+        x: 25,
         y: 50,
         font: 24,
         color: 'white'
       });
-
-      text({
-        context,
-        text: `Y: ${player.position.y}`,
-        x: camera.size.width - 125,
-        y: 75,
-        font: 24,
-        color: 'white'
-      });
-
     }
 
     // // Draw Y Axis
@@ -504,6 +498,7 @@ window.onload = () => {
         username: usernameInput.value,
         screen: {
           size: game.camera.size,
+          proportion: game.camera.proportion
         }
       });
 
@@ -537,6 +532,11 @@ window.onload = () => {
 
     window.onmousedown = (event) => {
       if (isTypingMessage) return;
+
+      console.log({
+        x: Math.round((game.camera.position.x + event.clientX) / game.camera.proportion),
+        y: Math.round((game.camera.position.y + event.clientY) / game.camera.proportion),
+      });
 
       game.playerShot(event.clientX, event.clientY)
     }

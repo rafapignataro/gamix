@@ -66,6 +66,7 @@ export type Map = {
 
 export type PlayerScreen = {
   size: Size;
+  proportion: number;
 }
 
 export type AddPlayerProps = {

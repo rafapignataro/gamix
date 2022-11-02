@@ -143,7 +143,6 @@ class Game {
 
   movePlayer(player: Player) {
     if (!this.players[player.id]) return;
-    console.log(123)
     this.players[player.id].move = player.move;
   }
 
@@ -157,19 +156,19 @@ class Game {
     return Object.keys(this.players).length;
   }
 
-  playerAim({ playerId, mousePosition }: { playerId: string, mousePosition: Position }) {
+  playerAim({ playerId, mousePosition, cameraPosition }: { playerId: string, mousePosition: Position, cameraPosition: Position }) {
     if (!this.players[playerId]) return;
 
     const player = this.players[playerId];
 
     const startPosition = {
-      x: player.screen.size.width / 2,
-      y: player.screen.size.height / 2,
+      x: player.position.x + (player.size.width / 2),
+      y: player.position.y + (player.size.height / 2),
     };
 
     const endPosition = {
-      x: mousePosition.x,
-      y: mousePosition.y
+      x: Math.round((cameraPosition.x + mousePosition.x) / player.screen.proportion),
+      y: Math.round((cameraPosition.y + mousePosition.y) / player.screen.proportion),
     };
 
     const xDistance = endPosition.x - startPosition.x;
@@ -320,10 +319,11 @@ io.on('connection', (socket) => {
     })
   });
 
-  socket.on('PLAYER_AIM', ({ playerId, mousePosition }) => {
+  socket.on('PLAYER_AIM', ({ playerId, mousePosition, cameraPosition }) => {
     game.playerAim({
       playerId,
-      mousePosition
+      mousePosition,
+      cameraPosition
     })
   })
 
