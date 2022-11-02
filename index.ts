@@ -12,7 +12,7 @@ const io = new Server(server, {
   cors: {
     origin: '*',
     methods: ["GET", "POST"]
-  }
+  },
 });
 
 import { MAP, TILE_SIZE } from './map';
@@ -97,14 +97,14 @@ class Game {
 
   gameLoop?: NodeJS.Timer;
 
-  ioServer: Server;
+  websocket: Server;
 
   fps: number;
 
   status: 'STOPPED' | 'RUNNING' = 'STOPPED';
 
   constructor(config: GameConfig) {
-    this.ioServer = config.ioServer;
+    this.websocket = config.websocket;
     this.map = new Map(config.map);
     this.fps = config.fps || 1000 / 60;
     this.players = {};
@@ -117,7 +117,7 @@ class Game {
     this.gameLoop = setInterval(() => {
       this.update();
 
-      this.ioServer.sockets.emit('GAME_STATE', this.getGameState())
+      this.websocket.sockets.emit('GAME_STATE', this.getGameState())
     }, 1000 / 30);
   }
 
@@ -139,11 +139,11 @@ class Game {
       username,
       screen
     });
-    console.log(this.players[id])
   }
 
   movePlayer(player: Player) {
     if (!this.players[player.id]) return;
+    console.log(123)
     this.players[player.id].move = player.move;
   }
 
@@ -266,12 +266,12 @@ class Game {
 }
 
 class Messages {
-  ioServer: Server;
+  websocket: Server;
 
   messages: Message[];
 
-  constructor({ ioServer }: MessagesConfig) {
-    this.ioServer = ioServer;
+  constructor({ websocket }: MessagesConfig) {
+    this.websocket = websocket;
     this.messages = [];
   }
 
@@ -283,50 +283,51 @@ class Messages {
     };
     this.messages.push(message);
 
-    this.ioServer.sockets.emit('NEW_MESSAGE', message);
+    this.websocket.sockets.emit('NEW_MESSAGE', message);
   }
 }
 
 const game = new Game({
-  ioServer: io,
+  websocket: io,
   map: {
     tiles: MAP,
     tileSize: TILE_SIZE
   }
 });
 
-const messages = new Messages({ ioServer: io });
+const messages = new Messages({ websocket: io });
 
 io.on('connection', (socket) => {
   if (!game.getPlayersCount()) game.start();
 
   socket.emit('GAME_MAP', { tiles: game.map.tiles, tileSize: game.map.tileSize });
 
-  socket.on('JOIN_GAME', (joinedUser) => {
-    game.addPlayer(joinedUser);
+  socket.on('JOIN_GAME', (player) => {
+    game.addPlayer(player);
 
-    io.to(socket.id).emit('JOINED_GAME', game.players[joinedUser.id]);
+    io.to(socket.id).emit('JOINED_SUCCESSFULLY', game.players[player.id]);
+    io.emit('PLAYER_JOINED', game.players[player.id]);
   });
 
   socket.on('PLAYER_MOVE', (player) => {
     game.movePlayer(player);
   });
 
-  socket.on('USER_FIRE', ({ playerId, mousePosition }) => {
+  socket.on('PLAYER_FIRE', ({ playerId, mousePosition }) => {
     game.addShot({
       playerId,
       mousePosition
     })
   });
 
-  socket.on('USER_AIM', ({ playerId, mousePosition }) => {
+  socket.on('PLAYER_AIM', ({ playerId, mousePosition }) => {
     game.playerAim({
       playerId,
       mousePosition
     })
   })
 
-  socket.on('USER_SENT_MESSAGE', ({ player, text }) => {
+  socket.on('SEND_MESSAGE', ({ player, text }) => {
     messages.addMessage({
       player,
       text
@@ -334,7 +335,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    game.removePlayer(socket.id);
+    const disconnectedPlayer = game.players[socket.id];
+
+    if (!disconnectedPlayer) return;
+
+    game.removePlayer(disconnectedPlayer.id);
+
+    socket.broadcast.emit('PLAYER_LEFT', disconnectedPlayer);
   });
 });
 
@@ -344,6 +351,6 @@ app.use(cors({
 
 app.use(express.static(__dirname + '/public'));
 
-server.listen(4444, () => {
+server.listen(4444, '127.0.0.1', () => {
   console.log('ON: *:4444');
 });

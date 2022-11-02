@@ -6,6 +6,51 @@ const usernameInput = document.getElementById('username');
 const messagesContainer = document.getElementById('messages');
 const chatInput = document.getElementById('chat-input');
 const chatForm = document.getElementById('chat-form');
+const playerList = document.getElementById('player-list');
+
+class PlayerListController {
+  elementId;
+
+  element;
+
+  players = {};
+
+  constructor(elementId) {
+    this.elementId = elementId;
+
+    this.element = document.getElementById(this.elementId);
+  }
+
+  addPlayer(player) {
+    this.players[player.id] = player;
+    this.renderPlayers();
+  }
+
+  removePlayer(player) {
+    delete this.players[player.id];
+
+    this.renderPlayers();
+  }
+
+  addInitialPlayers(players) {
+    this.players = players;
+
+    this.renderPlayers();
+  }
+
+  renderPlayers() {
+    playerList.innerHTML = '';
+
+    Object.values(this.players).forEach(player => {
+      const playerConnected = document.createElement('div');
+      playerConnected.className = 'connected-player';
+
+      playerConnected.innerText = player.username;
+
+      this.element.appendChild(playerConnected);
+    })
+  }
+}
 
 const getTileColor = (tile) => {
   if (tile === 0) return '#6ab04c';
@@ -287,7 +332,7 @@ class GameClient {
 
   playerShot(clickX, clickY) {
     const { socket } = this;
-    socket.emit('USER_FIRE', {
+    socket.emit('PLAYER_FIRE', {
       playerId: socket.id,
       mousePosition: {
         x: clickX,
@@ -299,7 +344,7 @@ class GameClient {
   playerAim(clickX, clickY) {
     const { socket } = this;
 
-    socket.emit('USER_AIM', {
+    socket.emit('PLAYER_AIM', {
       playerId: socket.id,
       mousePosition: {
         x: clickX,
@@ -339,7 +384,6 @@ class GameClient {
 
     if (this.player && players[this.player.id]) camera.follow(players[this.player.id]);
 
-    let startY = 50;
     // Draw Players
     for (const player of Object.values(players)) {
       if (socket.id === player.id) this.player = player;
@@ -377,17 +421,6 @@ class GameClient {
         font: 16,
         color: socket.id === player.id ? '#eb4d4b' : '#130f40'
       });
-
-      text({
-        context,
-        text: player.username,
-        x: 25,
-        y: startY,
-        font: 24,
-        color: socket.id === player.id ? '#eb4d4b' : '#130f40'
-      });
-
-      startY += 50;
     }
 
     // Draw Shots
@@ -449,7 +482,7 @@ class GameClient {
 isTypingMessage = false;
 
 window.onload = () => {
-  const socket = io('http://localhost:4444');
+  const socket = io('http://127.0.0.1:4444');
 
   const canvas = document.getElementById('canvas');
 
@@ -459,6 +492,8 @@ window.onload = () => {
   });
 
   socket.on('connect', (connection) => {
+    const playerListController = new PlayerListController('player-list');
+
     enterForm.onsubmit = (event) => {
       event.preventDefault();
 
@@ -478,7 +513,7 @@ window.onload = () => {
     chatForm.onsubmit = (event) => {
       event.preventDefault();
 
-      socket.emit('USER_SENT_MESSAGE', {
+      socket.emit('SEND_MESSAGE', {
         player: {
           id: game.player.id,
           username: game.player.username,
@@ -520,8 +555,11 @@ window.onload = () => {
       game.updateState(JSON.parse(state))
     });
 
-    socket.on('JOINED_GAME', (player) => {
-      game.addPlayer(player)
+    socket.on('JOINED_SUCCESSFULLY', (player) => {
+      game.addPlayer(player);
+      if (Object.keys(game.players).length) {
+        playerListController.addInitialPlayers(game.players);
+      }
     });
 
     socket.on('NEW_MESSAGE', (message) => {
@@ -568,10 +606,18 @@ window.onload = () => {
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
     });
 
+    socket.on('PLAYER_JOINED', player => {
+      playerListController.addPlayer(player);
+    });
+
+    socket.on('PLAYER_LEFT', player => {
+      playerListController.removePlayer(player);
+    })
+
     socket.on('disconnect', () => {
       game.reset();
       SCREEN_STATE = 'INITIAL';
-      formContainer.style.display = 'flex'
+      formContainer.style.display = 'flex';
     })
   })
 }

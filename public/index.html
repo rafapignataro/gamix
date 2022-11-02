@@ -23,7 +23,7 @@
       <h1>MUNDIX</h1>
       <form class="form" id="enter-form">
         <div class="form-field">
-          <input type="text" placeholder="Your name" name="username" id="username">
+          <input type="text" placeholder="Your name" name="username" id="username" maxlength="10">
         </div>
         <button type="submit">ENTER</button>
       </form>
@@ -36,6 +36,11 @@
         <input type="text" id="chat-input" name="message">
         <button type="submit">SEND</button>
       </form>
+    </div>
+    <div class="players-container">
+      <h2>Players</h2>
+      <div class="players" id="player-list">
+      </div>
     </div>
   </div>
   <script src="app.js" defer></script>

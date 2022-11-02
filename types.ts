@@ -51,7 +51,7 @@ export type GameConfig = {
     tiles: number[][];
     tileSize: number;
   };
-  ioServer: Server;
+  websocket: Server;
   fps?: number;
 }
 
@@ -84,5 +84,5 @@ export type Message = {
 }
 
 export type MessagesConfig = {
-  ioServer: Server;
+  websocket: Server;
 }
