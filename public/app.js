@@ -1,5 +1,3 @@
-let SCREEN_STATE = 'INITIAL';
-
 // Screens
 const joinScreen = document.getElementById('join-screen');
 const gameScreen = document.getElementById('game-screen');
@@ -61,11 +59,9 @@ class PlayerListController {
 }
 
 const getTileColor = (tile) => {
-  if (tile === 0) return '#6ab04c';
-  if (tile === 1) return '#f6e58d';
-  if (tile === 2) return '#4834d4';
-
-  return 'black';
+  if (tile < 120) return '#6ab04c';
+  if (tile >= 120 && tile < 140) return '#f6e58d';
+  if (tile >= 140) return '#4834d4';
 }
 
 const circle = ({ context, x, y, radius, color }) => {
@@ -87,9 +83,10 @@ const rect = ({ context, x, y, width, height, color }) => {
   context.fillRect(x, y, width, height);
 };
 
-const text = ({ context, x, y, text, color, font }) => {
-  context.fillStyle = color ?? 'black';
-  context.font = `${font ?? '12'}px Silkscreen`;
+const text = ({ context, x, y, text, color = 'black', font = 12, textAlign = 'start' }) => {
+  context.fillStyle = color;
+  context.font = `${font}px Silkscreen`;
+  context.textAlign = textAlign;
   context.fillText(
     text,
     x,
@@ -224,6 +221,8 @@ class GameClient {
 
   status = '';
 
+  images = {};
+
   constructor({ socket, canvas }) {
     this.socket = socket;
 
@@ -236,12 +235,37 @@ class GameClient {
 
       if (p < 0.75) return 6;
 
-      if (p >= 0.75 && p < 1) return 8;
+      if (p >= 0.75 && p < 1) return 6;
 
-      return 12;
+      return 8;
     })();
 
     this.status = 'CONNECTING';
+
+    this.images = {
+      grassTileset: (() => {
+        const img = new Image();
+        img.src = 'img/grass-tileset.png';
+        return {
+          img,
+          loaded: false
+        };
+      })(),
+      player: (() => {
+        const img = new Image();
+        img.src = 'img/player.png';
+        return {
+          img,
+          loaded: false
+        };
+      })()
+    }
+
+    Object.keys(this.images).forEach(imageKey => {
+      const image = this.images[imageKey];
+      image.img.onload = () => image.loaded = true;
+    })
+
   }
 
   start(map) {
@@ -368,29 +392,39 @@ class GameClient {
   update() {
     const { context, camera, socket, map, players, shots, proportion } = this;
 
+    if (Object.values(this.images).some(image => !image.loaded)) return;
+
     for (let y = 0; y < map.tilesY; y++) {
       for (let x = 0; x < map.tilesX; x++) {
         const tile = map.tiles[y][x];
 
-        rect({
-          context,
-          x: x * map.tileSize - camera.position.x,
-          y: y * map.tileSize - camera.position.y,
-          width: map.tileSize,
-          height: map.tileSize,
-          color: getTileColor(tile)
-        });
-
-        // context.beginPath();
-        // context.lineWidth = '1';
-        // context.strokeStyle = '#fff';
-        // context.rect(
-        //   (x * map.tileSize) - camera.position.x,
-        //   (y * map.tileSize) - camera.position.y,
-        //   map.tileSize,
-        //   map.tileSize,
-        // );
-        // context.stroke();
+        if (tile < 120) {
+          context.drawImage(
+            this.images['grassTileset'].img,
+            0, 0,
+            128, 128,
+            x * map.tileSize - camera.position.x, y * map.tileSize - camera.position.y,
+            map.tileSize, map.tileSize
+          )
+        } else if (tile >= 120 && tile < 140) {
+          rect({
+            context,
+            x: x * map.tileSize - camera.position.x,
+            y: y * map.tileSize - camera.position.y,
+            width: map.tileSize,
+            height: map.tileSize,
+            color: getTileColor(tile)
+          });
+        } else {
+          rect({
+            context,
+            x: x * map.tileSize - camera.position.x,
+            y: y * map.tileSize - camera.position.y,
+            width: map.tileSize,
+            height: map.tileSize,
+            color: getTileColor(tile)
+          });
+        }
       }
     }
 
@@ -406,7 +440,7 @@ class GameClient {
         y: (player.position.y * proportion) - camera.position.y,
         width: player.size.width * proportion,
         height: player.size.height * proportion,
-        color: socket.id === player.id ? '#eb4d4b' : '#130f40'
+        color: socket.id === player.id ? '#130f40' : '#eb4d4b'
       });
 
       context.save();
@@ -431,7 +465,7 @@ class GameClient {
         x: (player.position.x * proportion) - camera.position.x,
         y: (player.position.y * proportion) - 10 - camera.position.y,
         font: 16,
-        color: socket.id === player.id ? '#eb4d4b' : '#130f40'
+        color: socket.id === player.id ? '#130f40' : '#eb4d4b'
       });
     }
 
@@ -611,8 +645,8 @@ window.onload = () => {
 
     socket.on('disconnect', () => {
       game.reset();
-      SCREEN_STATE = 'INITIAL';
-      joinFormContainer.style.display = 'flex';
+      joinScreen.style.display = 'flex';
+      gameScreen.style.display = 'none';
     })
   })
 }

@@ -15,7 +15,7 @@ const io = new Server(server, {
   },
 });
 
-import { MAP, TILE_SIZE } from './map';
+import { TileMapGenerator } from './map-generator';
 
 const createPlayer = ({ id, username, screen }: { id: string, username: string, screen: PlayerScreen }) => {
   return {
@@ -56,7 +56,8 @@ const createPlayer = ({ id, username, screen }: { id: string, username: string, 
 }
 
 type MapProps = {
-  tiles: number[][];
+  tilesX: number;
+  tilesY: number;
   tileSize: number
 }
 
@@ -71,15 +72,16 @@ class Map {
 
   tilesY: number;
 
+  constructor({ tilesX, tilesY, tileSize }: MapProps) {
+    const mapGenerator = new TileMapGenerator(tilesX, tilesY);
 
-  constructor({ tiles, tileSize }: MapProps) {
-    this.tiles = tiles;
+    this.tiles = mapGenerator.tiles;
 
     this.tileSize = tileSize;
 
-    this.tilesX = tiles[0].length;
+    this.tilesX = this.tiles[0].length;
 
-    this.tilesY = tiles.length;
+    this.tilesY = this.tiles.length;
 
     this.size = {
       width: this.tilesX * tileSize,
@@ -289,8 +291,9 @@ class Messages {
 const game = new Game({
   websocket: io,
   map: {
-    tiles: MAP,
-    tileSize: TILE_SIZE
+    tilesX: 64,
+    tilesY: 64,
+    tileSize: 16
   }
 });
 

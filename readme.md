@@ -10,6 +10,7 @@ I'm creating a game/game-engine with canvas, javascript/typescript, node.js and 
 - [x] Camera
 - [x] Player Shot
 - [x] Player Aim
+- [x] Perlin Noise Map Auto Generation
 - [ ] Collisions
 
 ### UI

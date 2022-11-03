@@ -48,7 +48,8 @@ export type Shot = {
 
 export type GameConfig = {
   map: {
-    tiles: number[][];
+    tilesX: number;
+    tilesY: number;
     tileSize: number;
   };
   websocket: Server;
