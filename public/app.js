@@ -251,14 +251,6 @@ class GameClient {
           loaded: false
         };
       })(),
-      player: (() => {
-        const img = new Image();
-        img.src = 'img/player.png';
-        return {
-          img,
-          loaded: false
-        };
-      })()
     }
 
     Object.keys(this.images).forEach(imageKey => {
