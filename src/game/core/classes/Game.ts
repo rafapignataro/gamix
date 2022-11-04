@@ -1,10 +1,11 @@
 import { Server } from "socket.io";
 import crypto from 'crypto';
 
-import { Position, Shot } from "../types";
+import { Position } from "../types";
 import { Map } from "./Map";
 import { GameObject } from "./GameObject";
 import { Player, PlayerScreen } from "./Player";
+import { Shot } from "./Shot";
 
 export type AddPlayerProps = {
   id: string;
@@ -37,13 +38,10 @@ export class Game {
 
   status: 'STOPPED' | 'RUNNING' = 'STOPPED';
 
-  gameObjects: Record<string, GameObject> = {};
-
   constructor(config: GameProps) {
     this.websocket = config.websocket;
     this.map = new Map(config.map);
     this.fps = config.fps || 1000 / 60;
-    this.gameObjects = {};
     this.players = {};
     this.shots = {};
   }
@@ -66,33 +64,26 @@ export class Game {
     this.shots = {};
   }
 
-  addGameObject(gameObject: GameObject & { id?: string }) {
-    this.gameObjects[gameObject.id ?? crypto.randomUUID()] = new GameObject(gameObject);
-  }
-
-  getGameObjectsByGroup(group: string) {
-    return Object.values(this.gameObjects).filter(gameObject => gameObject.group && gameObject.group === group);
-  }
-
-  removeGameObject(id: string) {
-    delete this.gameObjects[id];
-  }
-
   private getPlayers() {
     return Object.values(this.players);
   }
 
   addPlayer({ id, username, screen }: AddPlayerProps) {
-    this.players[id] = new Player({
+    const player = new Player({
       id,
       username,
       screen
     });
+
+    this.players[player.id] = player;
   }
 
-  movePlayer(player: Player) {
-    if (!this.players[player.id]) return;
-    this.players[player.id].move = player.move;
+  movePlayer({ id: playerId, move }: Player) {
+    const player = this.players[playerId];
+
+    if (!player) return;
+
+    this.players[playerId].move = move;
   }
 
   removePlayer(playerId: string) {
@@ -106,41 +97,18 @@ export class Game {
   }
 
   playerAim({ playerId, mousePosition, cameraPosition }: { playerId: string, mousePosition: Position, cameraPosition: Position }) {
-    if (!this.players[playerId]) return;
-
     const player = this.players[playerId];
 
-    const startPosition = {
-      x: player.position.x + (player.size.width / 2),
-      y: player.position.y + (player.size.height / 2),
-    };
+    if (!player) return;
 
-    const endPosition = {
-      x: Math.round((cameraPosition.x + mousePosition.x) / player.screen.proportion),
-      y: Math.round((cameraPosition.y + mousePosition.y) / player.screen.proportion),
-    };
-
-    const xDistance = endPosition.x - startPosition.x;
-    const yDistance = endPosition.y - startPosition.y;
-    const directDistance = Math.sqrt((xDistance * xDistance) + (yDistance * yDistance));
-
-    let rotation = Math.atan2(yDistance, xDistance) * 180 / Math.PI;
-
-    if (rotation < 0) rotation = 180 + (180 - Math.abs(rotation))
-
-    const dx = xDistance / directDistance;
-    const dy = yDistance / directDistance;
-
-    this.players[player.id].weapon = {
-      ...player.weapon,
-      rotation,
-      dx,
-      dy,
-    }
+    player.updateAim({
+      cameraPosition,
+      mousePosition
+    });
   }
 
   // Shots
-  addShot({ playerId, mousePosition }: { playerId: string, mousePosition: Position }) {
+  addShot({ playerId }: { playerId: string }) {
     if (!this.players[playerId]) return;
 
     const player = this.players[playerId];
@@ -154,10 +122,8 @@ export class Game {
       if (now - lastShotTime < 250) return;
     }
 
-    const shot = {
-      id: crypto.randomUUID(),
+    const shot = new Shot({
       playerId,
-      radius: 0.3,
       position: {
         x: player.weapon.position.x,
         y: player.weapon.position.y,
@@ -166,8 +132,7 @@ export class Game {
         x: player.weapon.dx * 10,
         y: player.weapon.dy * 10
       },
-      createdAt: new Date().toISOString()
-    };
+    });
 
     this.shots[shot.id] = shot;
   }
@@ -185,23 +150,9 @@ export class Game {
 
   private update() {
     this.getPlayers().forEach(player => {
-      if (player.move.up && player.position.y > 0) {
-        this.players[player.id].position.y = player.position.y -= player.velocity.y;
-      }
-      if (player.move.down && player.position.y + player.size.height + player.velocity.y <= this.map.size.height) {
-        this.players[player.id].position.y = player.position.y += player.velocity.y;
-      }
-      if (player.move.right && player.position.x + player.size.width + player.velocity.x <= this.map.size.width) {
-        this.players[player.id].position.x = player.position.x += player.velocity.x;
-      }
-      if (player.move.left && player.position.x > 0) {
-        this.players[player.id].position.x = player.position.x -= player.velocity.x;
-      }
-
-      this.players[player.id].weapon.position = {
-        x: this.players[player.id].position.x + this.players[player.id].size.width / 2,
-        y: this.players[player.id].position.y + this.players[player.id].size.height / 2,
-      }
+      player.update({
+        map: this.map
+      })
     });
 
     this.getShots().forEach(shot => {
@@ -209,6 +160,13 @@ export class Game {
 
       this.shots[shot.id].position.x = shot.position.x += velocity.x;
       this.shots[shot.id].position.y = shot.position.y += velocity.y;
-    })
+
+      if (
+        this.shots[shot.id].position.x > this.map.size.width ||
+        this.shots[shot.id].position.y > this.map.size.height
+      ) {
+        delete this.shots[shot.id];
+      }
+    });
   }
 }

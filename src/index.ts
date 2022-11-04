@@ -42,10 +42,9 @@ io.on('connection', (socket) => {
     game.movePlayer(player);
   });
 
-  socket.on('PLAYER_FIRE', ({ playerId, mousePosition }) => {
+  socket.on('PLAYER_FIRE', ({ playerId }) => {
     game.addShot({
       playerId,
-      mousePosition
     })
   });
 

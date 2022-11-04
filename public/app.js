@@ -485,7 +485,7 @@ class GameClient {
         context,
         x: (shot.position.x * this.proportion) - camera.position.x,
         y: (shot.position.y * this.proportion) - camera.position.y,
-        radius: shot.radius * proportion,
+        radius: shot.size.width * proportion,
         color: 'black'
       })
     }

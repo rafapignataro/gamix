@@ -64,10 +64,6 @@ export class GameObject {
     this.group = group;
   }
 
-  updatePosition(position: Position) {
-    this.position = position;
-  }
-
   addCollider(collider: CircleCollider | BoxCollider) {
     this.colliders[collider.name] = collider;
   }
