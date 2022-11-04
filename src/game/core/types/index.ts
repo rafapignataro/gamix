@@ -1,6 +1,12 @@
 import type { Server } from 'socket.io';
+import { PlayerScreen } from '../classes/Player';
 
 export type Position = {
+  x: number;
+  y: number;
+}
+
+export type Velocity = {
   x: number;
   y: number;
 }
@@ -8,33 +14,6 @@ export type Position = {
 export type Size = {
   width: number;
   height: number;
-}
-
-export type Player = {
-  id: string;
-  username: string;
-  move: {
-    up: boolean,
-    down: boolean,
-    left: boolean,
-    right: boolean,
-  },
-  velocity: number;
-  size: Size;
-  position: Position;
-  screen: PlayerScreen;
-  weapon: {
-    rotation: number;
-    dx: number;
-    dy: number;
-    position: Position;
-    size: Size;
-  }
-}
-
-export type CreateShotProps = {
-  playerId: string;
-  angle: number;
 }
 
 export type Shot = {
@@ -46,16 +25,6 @@ export type Shot = {
   createdAt: string;
 }
 
-export type GameConfig = {
-  map: {
-    tilesX: number;
-    tilesY: number;
-    tileSize: number;
-  };
-  websocket: Server;
-  fps?: number;
-}
-
 export type Map = {
   tiles: number[][];
   width: number;
@@ -65,13 +34,3 @@ export type Map = {
   tileSize: number;
 }
 
-export type PlayerScreen = {
-  size: Size;
-  proportion: number;
-}
-
-export type AddPlayerProps = {
-  id: string;
-  username: string;
-  screen: PlayerScreen;
-}

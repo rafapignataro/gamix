@@ -1,8 +1,16 @@
 import { Server } from "socket.io";
 import crypto from 'crypto';
 
-import { AddPlayerProps, Player, Position, Shot } from "../types";
+import { Position, Shot } from "../types";
 import { Map } from "./Map";
+import { GameObject } from "./GameObject";
+import { Player, PlayerScreen } from "./Player";
+
+export type AddPlayerProps = {
+  id: string;
+  username: string;
+  screen: PlayerScreen;
+}
 
 export type GameProps = {
   map: {
@@ -29,10 +37,13 @@ export class Game {
 
   status: 'STOPPED' | 'RUNNING' = 'STOPPED';
 
+  gameObjects: Record<string, GameObject> = {};
+
   constructor(config: GameProps) {
     this.websocket = config.websocket;
     this.map = new Map(config.map);
     this.fps = config.fps || 1000 / 60;
+    this.gameObjects = {};
     this.players = {};
     this.shots = {};
   }
@@ -55,44 +66,28 @@ export class Game {
     this.shots = {};
   }
 
+  addGameObject(gameObject: GameObject & { id?: string }) {
+    this.gameObjects[gameObject.id ?? crypto.randomUUID()] = new GameObject(gameObject);
+  }
+
+  getGameObjectsByGroup(group: string) {
+    return Object.values(this.gameObjects).filter(gameObject => gameObject.group && gameObject.group === group);
+  }
+
+  removeGameObject(id: string) {
+    delete this.gameObjects[id];
+  }
+
   private getPlayers() {
     return Object.values(this.players);
   }
 
   addPlayer({ id, username, screen }: AddPlayerProps) {
-    this.players[id] = {
+    this.players[id] = new Player({
       id,
       username,
-      move: {
-        up: false,
-        down: false,
-        left: false,
-        right: false,
-      },
-      velocity: 2,
-      size: {
-        width: 8,
-        height: 16,
-      },
-      position: {
-        x: 100,
-        y: 100
-      },
-      screen,
-      weapon: {
-        rotation: 0,
-        dx: 0,
-        dy: 0,
-        position: {
-          x: 100 + 10 / 2,
-          y: 100 + 16 / 2,
-        },
-        size: {
-          width: 1,
-          height: 5
-        }
-      }
-    }
+      screen
+    });
   }
 
   movePlayer(player: Player) {
@@ -191,16 +186,16 @@ export class Game {
   private update() {
     this.getPlayers().forEach(player => {
       if (player.move.up && player.position.y > 0) {
-        this.players[player.id].position.y = player.position.y -= player.velocity;
+        this.players[player.id].position.y = player.position.y -= player.velocity.y;
       }
-      if (player.move.down && player.position.y + player.size.height + player.velocity <= this.map.size.height) {
-        this.players[player.id].position.y = player.position.y += player.velocity;
+      if (player.move.down && player.position.y + player.size.height + player.velocity.y <= this.map.size.height) {
+        this.players[player.id].position.y = player.position.y += player.velocity.y;
       }
-      if (player.move.right && player.position.x + player.size.width + player.velocity <= this.map.size.width) {
-        this.players[player.id].position.x = player.position.x += player.velocity;
+      if (player.move.right && player.position.x + player.size.width + player.velocity.x <= this.map.size.width) {
+        this.players[player.id].position.x = player.position.x += player.velocity.x;
       }
       if (player.move.left && player.position.x > 0) {
-        this.players[player.id].position.x = player.position.x -= player.velocity;
+        this.players[player.id].position.x = player.position.x -= player.velocity.x;
       }
 
       this.players[player.id].weapon.position = {
