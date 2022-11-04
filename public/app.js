@@ -390,7 +390,7 @@ class GameClient {
       for (let x = 0; x < map.tilesX; x++) {
         const tile = map.tiles[y][x];
 
-        if (tile < 120) {
+        if (tile < 110) {
           context.drawImage(
             this.images['grassTileset'].img,
             0, 0,
@@ -398,7 +398,7 @@ class GameClient {
             x * map.tileSize - camera.position.x, y * map.tileSize - camera.position.y,
             map.tileSize, map.tileSize
           )
-        } else if (tile >= 120 && tile < 140) {
+        } else if (tile >= 110 && tile < 145) {
           rect({
             context,
             x: x * map.tileSize - camera.position.x,
@@ -433,6 +433,24 @@ class GameClient {
         width: player.size.width * proportion,
         height: player.size.height * proportion,
         color: socket.id === player.id ? '#130f40' : '#eb4d4b'
+      });
+
+      rect({
+        context,
+        x: (player.position.x * proportion) - camera.position.x + (2 * proportion),
+        y: (player.position.y * proportion) - camera.position.y + (2 * proportion),
+        width: 1 * proportion,
+        height: 2 * proportion,
+        color: '#fff'
+      });
+
+      rect({
+        context,
+        x: (player.position.x * proportion) - camera.position.x + (5 * proportion),
+        y: (player.position.y * proportion) - camera.position.y + (2 * proportion),
+        width: 1 * proportion,
+        height: 2 * proportion,
+        color: '#fff'
       });
 
       context.save();

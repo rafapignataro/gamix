@@ -1,96 +1,20 @@
-import express from 'express';
-import http from 'http';
-import cors from 'cors';
-import { Server, Socket } from 'socket.io';
+import { Server } from "socket.io";
 import crypto from 'crypto';
 
-import { Player, Shot, GameConfig, AddPlayerProps, Position, Message, MessagesConfig, PlayerScreen, Size } from './types';
+import { AddPlayerProps, Player, Position, Shot } from "../types";
+import { Map } from "./Map";
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
-    origin: '*',
-    methods: ["GET", "POST"]
-  },
-});
-
-import { TileMapGenerator } from './map-generator';
-
-const createPlayer = ({ id, username, screen }: { id: string, username: string, screen: PlayerScreen }) => {
-  return {
-    id,
-    username,
-    move: {
-      up: false,
-      down: false,
-      left: false,
-      right: false,
-    },
-    velocity: 2,
-    size: {
-      width: 10,
-      height: 16,
-    },
-    position: {
-      // x: Math.floor(Math.random() * MAP_WIDTH),
-      // y: Math.floor(Math.random() * MAP_HEIGHT),
-      x: 100,
-      y: 100
-    },
-    screen,
-    weapon: {
-      rotation: 0,
-      dx: 0,
-      dy: 0,
-      position: {
-        x: 100 + 10 / 2,
-        y: 100 + 16 / 2,
-      },
-      size: {
-        width: 1,
-        height: 5
-      }
-    }
-  }
+export type GameProps = {
+  map: {
+    tilesX: number;
+    tilesY: number;
+    tileSize: number;
+  };
+  websocket: Server;
+  fps?: number;
 }
 
-type MapProps = {
-  tilesX: number;
-  tilesY: number;
-  tileSize: number
-}
-
-class Map {
-  tiles: number[][];
-
-  tileSize: number;
-
-  size: Size;
-
-  tilesX: number;
-
-  tilesY: number;
-
-  constructor({ tilesX, tilesY, tileSize }: MapProps) {
-    const mapGenerator = new TileMapGenerator(tilesX, tilesY);
-
-    this.tiles = mapGenerator.tiles;
-
-    this.tileSize = tileSize;
-
-    this.tilesX = this.tiles[0].length;
-
-    this.tilesY = this.tiles.length;
-
-    this.size = {
-      width: this.tilesX * tileSize,
-      height: this.tilesY * tileSize,
-    };
-  }
-}
-
-class Game {
+export class Game {
   map: Map;
 
   players: Record<Player['id'], Player>;
@@ -105,7 +29,7 @@ class Game {
 
   status: 'STOPPED' | 'RUNNING' = 'STOPPED';
 
-  constructor(config: GameConfig) {
+  constructor(config: GameProps) {
     this.websocket = config.websocket;
     this.map = new Map(config.map);
     this.fps = config.fps || 1000 / 60;
@@ -136,11 +60,39 @@ class Game {
   }
 
   addPlayer({ id, username, screen }: AddPlayerProps) {
-    this.players[id] = createPlayer({
+    this.players[id] = {
       id,
       username,
-      screen
-    });
+      move: {
+        up: false,
+        down: false,
+        left: false,
+        right: false,
+      },
+      velocity: 2,
+      size: {
+        width: 8,
+        height: 16,
+      },
+      position: {
+        x: 100,
+        y: 100
+      },
+      screen,
+      weapon: {
+        rotation: 0,
+        dx: 0,
+        dy: 0,
+        position: {
+          x: 100 + 10 / 2,
+          y: 100 + 16 / 2,
+        },
+        size: {
+          width: 1,
+          height: 5
+        }
+      }
+    }
   }
 
   movePlayer(player: Player) {
@@ -265,95 +217,3 @@ class Game {
     })
   }
 }
-
-class Messages {
-  websocket: Server;
-
-  messages: Message[];
-
-  constructor({ websocket }: MessagesConfig) {
-    this.websocket = websocket;
-    this.messages = [];
-  }
-
-  addMessage({ player, text }: { player: { username: string, id: string }, text: string }) {
-    const message = {
-      player,
-      text,
-      timestamp: new Date().toISOString()
-    };
-    this.messages.push(message);
-
-    this.websocket.sockets.emit('NEW_MESSAGE', message);
-  }
-}
-
-const game = new Game({
-  websocket: io,
-  map: {
-    tilesX: 64,
-    tilesY: 64,
-    tileSize: 16
-  }
-});
-
-const messages = new Messages({ websocket: io });
-
-io.on('connection', (socket) => {
-  if (!game.getPlayersCount()) game.start();
-
-  socket.emit('GAME_MAP', { tiles: game.map.tiles, tileSize: game.map.tileSize });
-
-  socket.on('JOIN_GAME', (player) => {
-    game.addPlayer(player);
-
-    io.to(socket.id).emit('JOINED_SUCCESSFULLY', game.players[player.id]);
-    io.emit('PLAYER_JOINED', game.players[player.id]);
-  });
-
-  socket.on('PLAYER_MOVE', (player) => {
-    game.movePlayer(player);
-  });
-
-  socket.on('PLAYER_FIRE', ({ playerId, mousePosition }) => {
-    game.addShot({
-      playerId,
-      mousePosition
-    })
-  });
-
-  socket.on('PLAYER_AIM', ({ playerId, mousePosition, cameraPosition }) => {
-    game.playerAim({
-      playerId,
-      mousePosition,
-      cameraPosition
-    })
-  })
-
-  socket.on('SEND_MESSAGE', ({ player, text }) => {
-    messages.addMessage({
-      player,
-      text
-    });
-  });
-
-  socket.on('disconnect', () => {
-    const disconnectedPlayer = game.players[socket.id];
-
-    if (!disconnectedPlayer) return;
-
-    game.removePlayer(disconnectedPlayer.id);
-
-    socket.broadcast.emit('PLAYER_LEFT', disconnectedPlayer);
-  });
-});
-
-app.use(cors({
-  origin: '*',
-}))
-
-app.use(express.static(__dirname + '/public'));
-
-server.listen(4444, '127.0.0.1', () => {
-  console.log('ON: *:4444');
-});

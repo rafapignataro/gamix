@@ -75,16 +75,3 @@ export type AddPlayerProps = {
   username: string;
   screen: PlayerScreen;
 }
-
-export type Message = {
-  player: {
-    id: string;
-    username: string;
-  }
-  text: string;
-  timestamp: string;
-}
-
-export type MessagesConfig = {
-  websocket: Server;
-}

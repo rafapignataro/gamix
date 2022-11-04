@@ -16,7 +16,7 @@ export class TileMapGenerator {
       tiles[y] = [];
 
       for (let x = 0; x < tilesX; x += 1) {
-        let v = Math.floor(this.get(x / 10, y / 10) * COLOR_SCALE);
+        let v = Math.floor(this.get(x / 20, y / 20) * COLOR_SCALE);
 
         if (v < 0) {
           v = Math.abs(v / 2)
