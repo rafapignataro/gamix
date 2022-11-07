@@ -34,7 +34,7 @@ const text = ({ context, x, y, text, color = 'black', font = 12, textAlign = 'st
   );
 }
 
-window.Game = class Game {
+window.Gamix = class Gamix {
   socket;
 
   canvas;
@@ -70,7 +70,9 @@ window.Game = class Game {
 
   screens;
 
-  constructor({ socket, canvas, screens }) {
+  update;
+
+  constructor({ socket, canvas, screens, setup, update }) {
     this.socket = socket;
 
     this.canvas = canvas;
@@ -108,6 +110,10 @@ window.Game = class Game {
       const image = this.images[imageKey];
       image.img.onload = () => image.loaded = true;
     });
+
+    setup(this);
+
+    this.update = update;
   }
 
   start(map) {
@@ -135,6 +141,10 @@ window.Game = class Game {
   updateState({ players, shots }) {
     this.players = players;
     this.shots = shots;
+  }
+
+  setPlayer(player) {
+    this.player = player;
   }
 
   addPlayer({ id, username, position, size }) {
@@ -231,133 +241,16 @@ window.Game = class Game {
     })
   }
 
-  update() {
-    const { context, camera, socket, map, players, shots, proportion } = this;
-
+  _update() {
     if (Object.values(this.images).some(image => !image.loaded)) return;
 
-    for (let y = 0; y < map.tilesY; y++) {
-      for (let x = 0; x < map.tilesX; x++) {
-        const tile = map.tiles[y][x];
-
-        if (tile < 110) {
-          context.drawImage(
-            this.images['grassTileset'].img,
-            0, 0,
-            128, 128,
-            x * map.tileSize - camera.position.x, y * map.tileSize - camera.position.y,
-            map.tileSize, map.tileSize
-          )
-        } else if (tile >= 110 && tile < 145) {
-          rect({
-            context,
-            x: x * map.tileSize - camera.position.x,
-            y: y * map.tileSize - camera.position.y,
-            width: map.tileSize,
-            height: map.tileSize,
-            color: getTileColor(tile)
-          });
-        } else {
-          rect({
-            context,
-            x: x * map.tileSize - camera.position.x,
-            y: y * map.tileSize - camera.position.y,
-            width: map.tileSize,
-            height: map.tileSize,
-            color: getTileColor(tile)
-          });
-        }
-      }
-    }
-
-    if (this.player && players[this.player.id]) camera.follow(players[this.player.id]);
-
-    // Draw Players
-    for (const player of Object.values(players)) {
-      if (socket.id === player.id) this.player = player;
-      // Player Body
-      rect({
-        context,
-        x: (player.position.x * proportion) - camera.position.x,
-        y: (player.position.y * proportion) - camera.position.y,
-        width: player.size.width * proportion,
-        height: player.size.height * proportion,
-        color: socket.id === player.id ? '#130f40' : '#eb4d4b'
-      });
-
-      rect({
-        context,
-        x: (player.position.x * proportion) - camera.position.x + (2 * proportion),
-        y: (player.position.y * proportion) - camera.position.y + (2 * proportion),
-        width: 1 * proportion,
-        height: 2 * proportion,
-        color: '#fff'
-      });
-
-      rect({
-        context,
-        x: (player.position.x * proportion) - camera.position.x + (5 * proportion),
-        y: (player.position.y * proportion) - camera.position.y + (2 * proportion),
-        width: 1 * proportion,
-        height: 2 * proportion,
-        color: '#fff'
-      });
-
-      context.save();
-      context.translate(
-        ((player.position.x + (player.size.width / 2)) * proportion) - camera.position.x,
-        ((player.position.y + (player.size.height / 2)) * proportion) - camera.position.y
-      );
-      context.rotate(player.weapon.rotation * Math.PI / 180);
-      rect({
-        context,
-        x: 0,
-        y: 0,
-        width: 10 * proportion,
-        height: 1 * proportion,
-        color: 'black'
-      });
-      context.restore();
-
-      text({
-        context,
-        text: player.username,
-        x: (player.position.x * proportion) - camera.position.x,
-        y: (player.position.y * proportion) - 10 - camera.position.y,
-        font: 16,
-        color: socket.id === player.id ? '#130f40' : '#eb4d4b'
-      });
-    }
-
-    // Draw Shots
-    for (const shot of Object.values(shots)) {
-      circle({
-        context,
-        x: (shot.position.x * this.proportion) - camera.position.x,
-        y: (shot.position.y * this.proportion) - camera.position.y,
-        radius: shot.size.width * proportion,
-        color: 'black'
-      })
-    }
-
-    if (this.player && players[this.player.id]) {
-      const player = players[this.player.id];
-
-      text({
-        context,
-        text: `X: ${player.position.x} | Y: ${player.position.y}`,
-        x: 25,
-        y: 50,
-        font: 24,
-        color: 'white'
-      });
-    }
+    this.update(this);
   }
 
   render() {
     if (this.status !== 'CONNECTED') return;
 
-    this.update();
+    this._update();
 
     window.requestAnimationFrame(this.render.bind(this));
   }
