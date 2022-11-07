@@ -1,6 +1,8 @@
+import crypto from 'crypto';
 import { Server } from "socket.io";
 
 type ChatMessage = {
+  id: string;
   player: {
     id: string;
     username: string;
@@ -25,6 +27,7 @@ export class Chat {
 
   addMessage({ player, text }: { player: { username: string, id: string }, text: string }) {
     const message = {
+      id: crypto.randomUUID(),
       player,
       text,
       timestamp: new Date().toISOString()
