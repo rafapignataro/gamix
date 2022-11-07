@@ -41,7 +41,7 @@ export class Game {
   constructor(config: GameProps) {
     this.websocket = config.websocket;
     this.map = new Map(config.map);
-    this.fps = config.fps || 1000 / 60;
+    this.fps = config.fps || 1000 / 30;
     this.players = {};
     this.shots = {};
   }
@@ -53,7 +53,7 @@ export class Game {
       this.update();
 
       this.websocket.sockets.emit('GAME_STATE', this.getGameState())
-    }, 1000 / 30);
+    }, this.fps);
   }
 
   stop() {

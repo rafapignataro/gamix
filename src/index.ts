@@ -1,10 +1,11 @@
 import express from 'express';
 import http from 'http';
 import cors from 'cors';
+import path from 'path';
 import { Server } from 'socket.io';
 
 import { Game } from './game/core/classes/Game';
-import { Chat } from './game/multiplayer/classes/Chat';
+import { Chat } from './game/server/classes/Chat';
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +22,7 @@ const game = new Game({
     tilesX: 128,
     tilesY: 128,
     tileSize: 8
-  }
+  },
 });
 
 const chat = new Chat({ websocket: io });
@@ -78,7 +79,11 @@ app.use(cors({
   origin: '*',
 }))
 
-app.use(express.static(__dirname + '/../public'));
+app.get('/', (request, response) => {
+  response.sendFile(path.resolve(__dirname, 'client', 'index.html'));
+});
+
+app.use(express.static(path.resolve(__dirname, 'client')));
 
 server.listen(4444, '127.0.0.1', () => {
   console.log('ON: *:4444');
