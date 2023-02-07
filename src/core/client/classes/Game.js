@@ -34,18 +34,14 @@ const text = ({ context, x, y, text, color = 'black', font = 12, textAlign = 'st
   );
 }
 
-window.Gamix = class Gamix {
+window.Game = class Game {
   socket;
 
   canvas;
 
   context;
 
-  player = null;
-
-  players = {};
-
-  shots = {};
+  gameObjects = new GameObjects();
 
   isPressingKey = false;
 
@@ -71,6 +67,8 @@ window.Gamix = class Gamix {
   screens;
 
   update;
+
+  player = null;
 
   constructor({ socket, canvas, screens, setup, update }) {
     this.socket = socket;
@@ -134,8 +132,7 @@ window.Gamix = class Gamix {
 
   reset() {
     this.player = null;
-    this.players = {};
-    this.shots = {};
+    this.gameObjects.reset();
   }
 
   updateState({ players, shots }) {
@@ -194,7 +191,7 @@ window.Gamix = class Gamix {
       }
 
       if (this.isPressingKey) {
-        socket.emit('PLAYER_MOVE', player)
+        socket.emit('PLAYER_MOVE', { id: player.id, input: player.move })
         this.isPressingKey = false;
       }
 
@@ -214,7 +211,7 @@ window.Gamix = class Gamix {
       player.move.right = false;
     }
 
-    socket.emit('PLAYER_MOVE', player)
+    socket.emit('PLAYER_MOVE', { id: player.id, input: player.move })
   }
 
   playerShot(clickX, clickY) {

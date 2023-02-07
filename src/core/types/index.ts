@@ -1,6 +1,3 @@
-import type { Server } from 'socket.io';
-import { PlayerScreen } from '../classes/Player';
-
 export type Position = {
   x: number;
   y: number;
@@ -34,3 +31,14 @@ export type Map = {
   tileSize: number;
 }
 
+export type Screen = {
+  size: Size;
+  proportion: number;
+}
+
+export type Movement = {
+  up: boolean;
+  down: boolean;
+  left: boolean;
+  right: boolean;
+}

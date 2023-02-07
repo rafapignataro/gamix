@@ -4,8 +4,10 @@ import cors from 'cors';
 import path from 'path';
 import { Server } from 'socket.io';
 
-import { Game } from './game/core/classes/Game';
-import { Chat } from './game/server/classes/Chat';
+import { Game } from './core/server/Game';
+import { Chat } from './core/server/Chat';
+import { CreateGameObject } from './core/server/GameObject';
+import { Movement } from './core/types';
 
 const app = express();
 const server = http.createServer(app);
@@ -23,38 +25,44 @@ const game = new Game({
     tilesY: 128,
     tileSize: 8
   },
+  setup: (game: Game) => { },
+  update: (game: Game) => { },
 });
 
 const chat = new Chat({ websocket: io });
 
 io.on('connection', (socket) => {
-  if (!game.getPlayersCount()) game.start();
+  if (!Object.keys(game.gameObjects).length) game.start();
 
   socket.emit('GAME_MAP', { tiles: game.map.tiles, tileSize: game.map.tileSize });
 
-  socket.on('JOIN_GAME', (player) => {
-    game.addPlayer(player);
+  socket.on('JOIN_GAME', (player: CreateGameObject) => {
+    game.gameObjects.add(player);
 
-    io.to(socket.id).emit('JOINED_SUCCESSFULLY', game.players[player.id]);
-    io.emit('PLAYER_JOINED', game.players[player.id]);
+    const gameObject = game.gameObjects.find(String(player.id));
+
+    io.to(socket.id).emit('JOINED_SUCCESSFULLY', gameObject);
+    io.emit('PLAYER_JOINED', gameObject);
   });
 
-  socket.on('PLAYER_MOVE', (player) => {
-    game.movePlayer(player);
+  socket.on('PLAYER_MOVE', (data: { id: string, input: Movement }) => {
+    const gameObject = game.gameObjects.find(data.id);
+
+    gameObject.setMovement(data.input);
   });
 
   socket.on('PLAYER_FIRE', ({ playerId }) => {
-    game.addShot({
-      playerId,
-    })
+    // game.addShot({
+    //   playerId,
+    // })
   });
 
   socket.on('PLAYER_AIM', ({ playerId, mousePosition, cameraPosition }) => {
-    game.playerAim({
-      playerId,
-      mousePosition,
-      cameraPosition
-    })
+    // game.playerAim({
+    //   playerId,
+    //   mousePosition,
+    //   cameraPosition
+    // })
   })
 
   socket.on('SEND_MESSAGE', ({ player, text }) => {
@@ -65,26 +73,22 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
-    const disconnectedPlayer = game.players[socket.id];
+    const gameObject = game.gameObjects.find(socket.id);
 
-    if (!disconnectedPlayer) return;
+    if (!gameObject) return;
 
-    game.removePlayer(disconnectedPlayer.id);
+    game.gameObjects.remove(gameObject.id);
 
-    socket.broadcast.emit('PLAYER_LEFT', disconnectedPlayer);
+    socket.broadcast.emit('PLAYER_LEFT', gameObject);
   });
 });
 
-app.use(cors({
-  origin: '*',
-}))
+app.use(cors({ origin: '*' }))
 
 app.get('/', (request, response) => {
-  response.sendFile(path.resolve(__dirname, 'client', 'index.html'));
+  response.sendFile(path.resolve(__dirname, 'core', 'client', 'index.html'));
 });
 
-app.use(express.static(path.resolve(__dirname, 'client')));
+app.use(express.static(path.resolve(__dirname, 'core', 'client')));
 
-server.listen(4444, '127.0.0.1', () => {
-  console.log('ON: *:4444');
-});
+server.listen(4444, '127.0.0.1', () => console.log('ON: *:4444'));

@@ -1,6 +1,7 @@
-import { Position, Size } from "../types";
-import { GameObject, GameObjectProps } from "./GameObject";
-import { Map } from "./Map";
+import { Game } from "../core/server/Game";
+import { GameObject } from "../core/server/GameObject";
+import { Map } from "../core/server/Map";
+import { Position, Size } from "../core/types";
 
 export type PlayerMovement = {
   up: boolean,
@@ -81,7 +82,7 @@ export class Player extends GameObject {
     }
   }
 
-  update({ map }: { map: Map }) {
+  update({ map }: Game) {
     if (this.move.up && this.position.y > 0) {
       this.position.y = this.position.y -= this.velocity.y;
     }

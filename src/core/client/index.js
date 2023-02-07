@@ -10,7 +10,7 @@ window.onload = () => {
   const socket = io('http://127.0.0.1:4444');
 
   // Game
-  new Gamix({
+  new Game({
     socket,
     canvas: document.getElementById('canvas'),
     screens: {
@@ -44,7 +44,9 @@ window.onload = () => {
         const playerConnected = document.createElement('div');
         playerConnected.className = 'connected-player';
 
-        playerConnected.innerText = player.username;
+        // playerConnected.innerText = player.username;
+        playerConnected.innerText = player.id;
+
 
         return playerConnected;
       });
@@ -98,8 +100,8 @@ window.onload = () => {
 
     game.inputs.on('keydown', (key) => game.movePlayer(key, 'down'));
     game.inputs.on('keyup', (key) => game.movePlayer(key, 'up'));
-    game.inputs.on('mousedown', ({ clientX, clientY }) => game.playerShot(clientX, clientY));
-    game.inputs.on('mousemove', ({ clientX, clientY }) => game.playerAim(clientX, clientY));
+    // game.inputs.on('mousedown', ({ clientX, clientY }) => game.playerShot(clientX, clientY));
+    // game.inputs.on('mousemove', ({ clientX, clientY }) => game.playerAim(clientX, clientY));
 
     game.inputs.disable();
 
@@ -144,8 +146,8 @@ window.onload = () => {
       });
 
       socket.on('JOINED_SUCCESSFULLY', (player) => {
-        game.addPlayer(player);
-        if (Object.keys(game.players).length) playerState.set(game.players);
+        game.gameObjects.add(player);
+        if (Object.keys(game.gameObjects).length) playerState.set(game.gameObjects);
 
         game.screens.change('game');
 
@@ -161,7 +163,7 @@ window.onload = () => {
       });
 
       socket.on('PLAYER_LEFT', player => {
-        const newPlayerState = game.players;
+        const newPlayerState = game.gameObjects;
 
         delete newPlayerState[player.id];
 
@@ -177,7 +179,7 @@ window.onload = () => {
   }
 
   function update(game) {
-    const { context, camera, socket, player, map, players, shots, proportion, images } = game;
+    const { context, camera, socket, player, map, gameObjects, proportion, images } = game;
 
     for (let y = 0; y < map.tilesY; y++) {
       for (let x = 0; x < map.tilesX; x++) {
@@ -213,10 +215,10 @@ window.onload = () => {
       }
     }
 
-    if (player && players[player.id]) camera.follow(players[player.id]);
+    if (player && gameObjects[player.id]) camera.follow(gameObjects[player.id]);
 
     // Draw Players
-    for (const player of Object.values(players)) {
+    for (const player of Object.values(gameObjects)) {
       if (socket.id === player.id) game.setPlayer(player);
       // Player Body
       rect({
@@ -246,45 +248,45 @@ window.onload = () => {
         color: '#fff'
       });
 
-      context.save();
-      context.translate(
-        ((player.position.x + (player.size.width / 2)) * proportion) - camera.position.x,
-        ((player.position.y + (player.size.height / 2)) * proportion) - camera.position.y
-      );
-      context.rotate(player.weapon.rotation * Math.PI / 180);
-      rect({
-        context,
-        x: 0,
-        y: 0,
-        width: 10 * proportion,
-        height: 1 * proportion,
-        color: 'black'
-      });
-      context.restore();
+      // context.save();
+      // context.translate(
+      //   ((player.position.x + (player.size.width / 2)) * proportion) - camera.position.x,
+      //   ((player.position.y + (player.size.height / 2)) * proportion) - camera.position.y
+      // );
+      // context.rotate(player.weapon.rotation * Math.PI / 180);
+      // rect({
+      //   context,
+      //   x: 0,
+      //   y: 0,
+      //   width: 10 * proportion,
+      //   height: 1 * proportion,
+      //   color: 'black'
+      // });
+      // context.restore();
 
-      text({
-        context,
-        text: player.username,
-        x: (player.position.x * proportion) - camera.position.x,
-        y: (player.position.y * proportion) - 10 - camera.position.y,
-        font: 16,
-        color: socket.id === player.id ? '#130f40' : '#eb4d4b'
-      });
+      // text({
+      //   context,
+      //   text: player.username,
+      //   x: (player.position.x * proportion) - camera.position.x,
+      //   y: (player.position.y * proportion) - 10 - camera.position.y,
+      //   font: 16,
+      //   color: socket.id === player.id ? '#130f40' : '#eb4d4b'
+      // });
     }
 
     // Draw Shots
-    for (const shot of Object.values(shots)) {
-      circle({
-        context,
-        x: (shot.position.x * proportion) - camera.position.x,
-        y: (shot.position.y * proportion) - camera.position.y,
-        radius: shot.size.width * proportion,
-        color: 'black'
-      })
-    }
+    // for (const shot of Object.values(shots)) {
+    //   circle({
+    //     context,
+    //     x: (shot.position.x * proportion) - camera.position.x,
+    //     y: (shot.position.y * proportion) - camera.position.y,
+    //     radius: shot.size.width * proportion,
+    //     color: 'black'
+    //   })
+    // }
 
-    if (player && players[player.id]) {
-      const currentPlayer = players[player.id];
+    if (player && gameObjects[player.id]) {
+      const currentPlayer = gameObjects[player.id];
 
       text({
         context,

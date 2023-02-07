@@ -1,7 +1,6 @@
 import crypto from 'crypto';
-
-import { Position, Velocity } from "../types";
-import { GameObject } from "./GameObject";
+import { GameObject } from '../core/server/GameObject';
+import { Position, Velocity } from '../core/types';
 
 type ShotProps = {
   playerId: string;

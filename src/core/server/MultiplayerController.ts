@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 
-import { Game } from "../../core/classes/Game";
+import { Game } from "./Game";
 
 type MultiplayerControllerProps = {
   game: Game;

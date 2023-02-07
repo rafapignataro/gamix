@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 
-import { Size, Position, Velocity } from "../types";
+import { Size, Position, Velocity, Movement } from "../types";
+import { Game } from './Game';
 
 type BoxCollider = {
   name: string;
@@ -26,6 +27,10 @@ export type GameObjectProps = {
   group?: string;
 }
 
+export type CreateGameObject = GameObjectProps
+
+export type UpdateGameObject = Partial<GameObjectProps>;
+
 export class GameObject {
   id: string;
 
@@ -43,13 +48,15 @@ export class GameObject {
 
   children: Record<string, GameObject> = {};
 
+  movement?: Movement;
+
   constructor({
     id,
     position,
     size,
     velocity,
     geometry = 'BOX',
-    group = undefined
+    group = undefined,
   }: GameObjectProps) {
     this.id = id ?? crypto.randomUUID();
 
@@ -62,9 +69,28 @@ export class GameObject {
     this.geometry = geometry;
 
     this.group = group;
+
   }
 
   addCollider(collider: CircleCollider | BoxCollider) {
     this.colliders[collider.name] = collider;
   }
+
+  setPosition(position: Position) {
+    this.position = position;
+  }
+
+  setSize(size: Size) {
+    this.size = size;
+  }
+
+  setVelocity(velocity: Velocity) {
+    this.velocity = velocity;
+  }
+
+  setMovement(movement: Movement) {
+    this.movement = movement;
+  }
+
+  update(game: Game) { }
 }
