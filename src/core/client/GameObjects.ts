@@ -1,14 +1,17 @@
-import { CreateGameObject, GameObject } from './GameObject';
+import { GameObject, GameObjectProps } from "./GameObject";
 
 export class GameObjects {
   private gameObjects: Record<string, GameObject> = {};
 
   constructor() { }
 
-  public add(data: CreateGameObject) {
+  public add(data: GameObjectProps) {
     const gameObject = new GameObject(data);
-
     this.gameObjects[gameObject.id] = gameObject;
+  }
+
+  public set(gameObjects: Record<string, GameObject>) {
+    this.gameObjects = gameObjects;
   }
 
   public find(id: string) {

@@ -1,9 +1,17 @@
-window.ScreenController = class ScreenController {
-  screens = {};
+export type GameScreen = {
+  active: boolean;
+  type: string,
+  element: HTMLElement;
+}
 
-  activeScreen;
+export type GameScreens = Record<string, GameScreen>;
 
-  constructor(screens) {
+export class ScreenController {
+  screens: GameScreens = {};
+
+  activeScreen?: string;
+
+  constructor(screens: GameScreens) {
     Object.keys(screens).forEach(screenKey => {
       if (this.screens[screenKey]) {
         throw new Error('ScreenController: This screen name already exists.');
@@ -15,7 +23,7 @@ window.ScreenController = class ScreenController {
 
       if (screens[screenKey].active) {
         this.activeScreen = screenKey;
-        screens[screenKey].element.style.display = screen.type;
+        screens[screenKey].element.style.display = screens[screenKey].type;
       } else {
         screens[screenKey].element.style.display = 'none';
       }
@@ -24,7 +32,7 @@ window.ScreenController = class ScreenController {
     });
   }
 
-  change(screenName) {
+  change(screenName: string) {
     Object.keys(this.screens).forEach(screenKey => {
       const screen = this.screens[screenKey];
 

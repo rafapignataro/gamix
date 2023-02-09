@@ -11,6 +11,17 @@
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "baseUrl": "./",
+    "paths": {
+      "@gamix/client": [
+        "src/core/client"
+      ],
+      "@gamix/server": [
+        "src/core/server"
+      ],
+      "@gamix/types": [
+        "src/core/types"
+      ],
+    }
   },
   "include": [
     "src/**/*",

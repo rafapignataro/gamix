@@ -1,11 +1,16 @@
-window.InputController = class InputController {
-  _pressed = {};
+type Input = {
+  disabled: boolean;
+  cb: (data?: any) => any;
+}
 
-  _releaseTime = {};
+export class InputController {
+  _pressed: Record<KeyboardEvent['key'], boolean> = {};
+
+  _releaseTime: Record<KeyboardEvent['key'], number> = {};
 
   _maxKeyDelay = 50;
 
-  inputs = {};
+  inputs: Record<string, Input> = {};
 
   constructor() {
     window.onkeydown = (e) => this._keydown(e);
@@ -14,7 +19,7 @@ window.InputController = class InputController {
     window.onmousemove = (e) => this._mousemove(e);
   }
 
-  on(name, cb, opts) {
+  on(name: string, cb: (data?: any) => any, opts?: { disabled: boolean }) {
     this.inputs[name] = {
       disabled: opts && opts.disabled !== undefined ? opts.disabled : false,
       cb
@@ -29,7 +34,7 @@ window.InputController = class InputController {
     Object.keys(this.inputs).forEach(eventKey => this.inputs[eventKey].disabled = true);
   }
 
-  _keydown(event) {
+  _keydown(event: KeyboardEvent) {
     const input = this.inputs['keydown'];
 
     if (!input) return;
@@ -38,31 +43,31 @@ window.InputController = class InputController {
     const time = new Date().getTime();
 
     if (
-      this._releaseTime[event.keyCode] &&
-      time < this._releaseTime[event.keyCode] + this._maxKeyDelay
+      this._releaseTime[event.key] &&
+      time < this._releaseTime[event.key] + this._maxKeyDelay
     ) {
       return;
     }
 
-    this._pressed[event.keyCode] = true;
+    this._pressed[event.key] = true;
 
     input.cb(event.key);
   }
 
-  _keyup(event) {
+  _keyup(event: KeyboardEvent) {
     const input = this.inputs['keyup'];
 
     if (!input) return;
     if (input.disabled) return;
 
-    delete this._pressed[event.keyCode];
+    delete this._pressed[event.key];
 
-    this._releaseTime[event.keyCode] = new Date().getTime();
+    this._releaseTime[event.key] = new Date().getTime();
 
     input.cb(event.key);
   }
 
-  _mousedown(event) {
+  _mousedown(event: MouseEvent) {
     const input = this.inputs['mousedown'];
 
     if (!input) return;
@@ -71,7 +76,7 @@ window.InputController = class InputController {
     input.cb(event);
   }
 
-  _mousemove(event) {
+  _mousemove(event: MouseEvent) {
     const input = this.inputs['mousemove'];
 
     if (!input) return;

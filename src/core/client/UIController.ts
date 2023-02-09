@@ -1,23 +1,27 @@
-window.UIController = class UIController {
+export class UIController<T = any> {
   elementId;
 
   element;
 
-  constructor(elementId) {
+  constructor(elementId: string) {
     this.elementId = elementId;
 
     if (!this.elementId) {
       throw new Error('StateController: elementId is required.')
     }
 
-    this.element = document.getElementById(this.elementId);
+    const element = document.getElementById(this.elementId);
 
-    if (!this.element) {
-      throw new Error('StateController: there is not element with this id.')
+    if (!element) {
+      throw new Error('StateController: Element not found in DOM.')
     }
+
+    this.element = element
   }
 
-  renderList(value, cb) {
+  renderList(value: Record<string, T>, cb: (data: T) => HTMLElement) {
+    if (!value) return;
+
     this.element.innerHTML = '';
 
     Object.values(value).forEach(item => {

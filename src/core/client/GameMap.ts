@@ -1,19 +1,18 @@
-window.Map = class Map {
-  tiles = [[]];
+import { Size } from "../types";
 
-  tileSize = 0;
+export class GameMap {
+  tiles: number[][];
 
-  size = {
-    x: 0,
-    y: 0
-  };
+  tileSize: number;
+
+  size: Size;
 
   tilesX = 0;
 
   tilesY = 0;
 
 
-  constructor({ tiles, tileSize }, proportion) {
+  constructor({ tiles, tileSize }: { tiles: number[][]; tileSize: number }, proportion: number) {
     this.tiles = tiles;
 
     this.tileSize = tileSize * proportion;

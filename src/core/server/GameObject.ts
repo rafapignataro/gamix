@@ -1,21 +1,7 @@
 import crypto from 'crypto';
 
-import { Size, Position, Velocity, Movement } from "../types";
+import { Size, Position, Velocity, Movement, Collider } from "../types";
 import { Game } from './Game';
-
-type BoxCollider = {
-  name: string;
-  type: 'BOX',
-  size: Size;
-  position: Position;
-};
-
-type CircleCollider = {
-  name: string;
-  type: 'CIRCLE',
-  radius: Number;
-  position: Position;
-}
 
 export type GameObjectProps = {
   id?: string;
@@ -23,8 +9,9 @@ export type GameObjectProps = {
   size: Size;
   velocity: Velocity;
   geometry?: 'BOX' | 'CIRCLE';
-  colliders?: Record<string, BoxCollider | CircleCollider>;
+  colliders?: Record<string, Collider>;
   group?: string;
+  movement?: Movement;
 }
 
 export type CreateGameObject = GameObjectProps
@@ -42,7 +29,7 @@ export class GameObject {
 
   geometry: 'BOX' | 'CIRCLE' = 'BOX';
 
-  colliders: Record<string, BoxCollider | CircleCollider> = {};
+  colliders: Record<string, Collider> = {};
 
   group?: string;
 
@@ -57,6 +44,7 @@ export class GameObject {
     velocity,
     geometry = 'BOX',
     group = undefined,
+    movement = undefined
   }: GameObjectProps) {
     this.id = id ?? crypto.randomUUID();
 
@@ -70,9 +58,10 @@ export class GameObject {
 
     this.group = group;
 
+    if (movement) this.movement = movement;
   }
 
-  addCollider(collider: CircleCollider | BoxCollider) {
+  addCollider(collider: Collider) {
     this.colliders[collider.name] = collider;
   }
 
@@ -92,5 +81,23 @@ export class GameObject {
     this.movement = movement;
   }
 
-  update(game: Game) { }
+  update(game: Game) {
+    const { position, velocity, size, movement } = this;
+
+    if (movement) {
+      if (movement.up && position.y > 0) {
+        position.y = position.y -= velocity.y;
+      }
+      if (movement.down && position.y + size.height + velocity.y <= game.map.size.height) {
+        position.y = position.y += velocity.y;
+      }
+      if (movement.right && position.x + size.width + velocity.x <= game.map.size.width) {
+        position.x = position.x += velocity.x;
+      }
+      if (movement.left && position.x > 0) {
+        position.x = position.x -= velocity.x;
+      }
+    }
+
+  }
 }

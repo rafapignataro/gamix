@@ -42,3 +42,19 @@ export type Movement = {
   left: boolean;
   right: boolean;
 }
+
+export type BoxCollider = {
+  name: string;
+  type: 'BOX',
+  size: Size;
+  position: Position;
+};
+
+export type CircleCollider = {
+  name: string;
+  type: 'CIRCLE',
+  radius: Number;
+  position: Position;
+}
+
+export type Collider = BoxCollider | CircleCollider;
